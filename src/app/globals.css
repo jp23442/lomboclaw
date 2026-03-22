@@ -5,22 +5,35 @@ html, body, #__next {
   overflow: hidden;
 }
 
-/* Scrollbar */
+html {
+  background: #171717;
+}
+
+body {
+  background: #171717;
+  color: #f4f4f5;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3f3f46 transparent;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: #3f3f46;
-  border-radius: 3px;
+  border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #52525b;
 }
 
-/* iOS safe areas */
 @supports (padding: env(safe-area-inset-bottom)) {
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
@@ -30,14 +43,13 @@ html, body, #__next {
   }
 }
 
-/* Code blocks */
 .msg-content pre {
   position: relative;
   overflow-x: auto;
-  border-radius: 0.5rem;
-  background: #18181b !important;
+  border-radius: 1rem;
+  background: #111113 !important;
   border: 1px solid #27272a;
-  margin: 0.75rem 0;
+  margin: 0.9rem 0;
 }
 
 .msg-content pre code {
@@ -55,15 +67,14 @@ html, body, #__next {
   background: #27272a;
   color: #a78bfa;
   padding: 0.15rem 0.4rem;
-  border-radius: 0.25rem;
+  border-radius: 0.35rem;
   font-size: 0.85em;
   font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace;
 }
 
-/* Prose overrides */
 .msg-content p {
   margin: 0.5rem 0;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 .msg-content p:first-child {
   margin-top: 0;
@@ -78,7 +89,7 @@ html, body, #__next {
 }
 .msg-content li {
   margin: 0.25rem 0;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 .msg-content ul li {
   list-style-type: disc;
@@ -134,14 +145,12 @@ html, body, #__next {
   margin: 1rem 0;
 }
 
-/* Syntax highlighting basics */
 .msg-content pre .keyword { color: #c084fc; }
 .msg-content pre .string { color: #34d399; }
 .msg-content pre .comment { color: #71717a; font-style: italic; }
 .msg-content pre .number { color: #fb923c; }
 .msg-content pre .function { color: #60a5fa; }
 
-/* Thinking animation */
 @keyframes thinking-dot {
   0%, 80%, 100% { opacity: 0.3; }
   40% { opacity: 1; }
@@ -152,7 +161,6 @@ html, body, #__next {
 .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
 .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
 
-/* Tool call expand animation */
 @keyframes slide-down {
   from { opacity: 0; max-height: 0; }
   to { opacity: 1; max-height: 200px; }

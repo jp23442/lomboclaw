@@ -7,22 +7,30 @@ import { StreamingMessage } from "./StreamingMessage";
 import { ChatInput, Attachment } from "./ChatInput";
 import { ModelSelector } from "./ModelSelector";
 import { GatewayModel } from "@/hooks/useGatewayInfo";
+import { OpenClawClient } from "@/lib/openclaw-client";
 
 interface ChatAreaProps {
   onSend: (text: string, attachments?: Attachment[]) => void;
   onAbort: () => void;
   onNewChat: () => void;
   models: GatewayModel[];
+  clientRef: React.RefObject<OpenClawClient | null>;
 }
 
-export function ChatArea({ onSend, onAbort, onNewChat, models }: ChatAreaProps) {
+const quickSuggestions = [
+  "Mostre um snippet de código bom",
+  "Me ajuda a estudar",
+  "Monta um plano de ação",
+  "Analisa um arquivo ou projeto",
+];
+
+export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: ChatAreaProps) {
   const { sessions, activeSessionId, streaming, sidebarOpen, toggleSidebar, connectionState } = useAppStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   const messages = activeSession?.messages ?? [];
 
-  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streaming]);
@@ -35,13 +43,13 @@ export function ChatArea({ onSend, onAbort, onNewChat, models }: ChatAreaProps) 
   }[connectionState];
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-950">
-      {/* Header - OpenWebUI style */}
-      <header className="flex items-center gap-2 h-12 px-3 border-b border-zinc-800/50 bg-zinc-950 shrink-0">
+    <div className="flex h-full flex-1 flex-col bg-[#171717] text-zinc-100">
+      <header className="flex h-14 items-center gap-3 border-b border-zinc-800/80 px-4 shrink-0">
         {!sidebarOpen && (
           <button
             onClick={toggleSidebar}
-            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="rounded-xl p-2 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+            title="Abrir sidebar"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -50,71 +58,58 @@ export function ChatArea({ onSend, onAbort, onNewChat, models }: ChatAreaProps) 
           </button>
         )}
 
-        {/* Model selector */}
-        <ModelSelector models={models} />
+        <ModelSelector models={models} clientRef={clientRef} />
 
-        <div className="flex-1" />
-
-        {/* Status dot */}
-        <div className={`w-2 h-2 rounded-full ${statusDot}`} title={connectionState} />
-
-        {/* New chat */}
-        <button
-          onClick={onNewChat}
-          className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-          title="Nova conversa"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/70 px-3 py-1.5 text-xs text-zinc-400">
+            <span className={`h-2 w-2 rounded-full ${statusDot}`} />
+            {connectionState}
+          </div>
+          <button
+            onClick={onNewChat}
+            className="rounded-xl border border-zinc-800 bg-zinc-900/70 px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-900 hover:text-zinc-100"
+            title="Nova conversa"
+          >
+            Nova chat
+          </button>
+        </div>
       </header>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 && !streaming ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <div className="mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 flex items-center justify-center mx-auto shadow-lg shadow-emerald-900/30">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-              </div>
+          <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-lg shadow-black/20">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M12 3a9 9 0 100 18 9 9 0 000-18Z" />
+                <path d="M9.5 10a1.5 1.5 0 110 3 1.5 1.5 0 010-3Zm5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3Z" />
+              </svg>
             </div>
-            <h2 className="text-lg font-semibold text-zinc-200 mb-1">Como posso ajudar?</h2>
-            <p className="text-sm text-zinc-600 max-w-md">
-              Agente local com acesso a terminal, arquivos, browser e ferramentas.
+            <h1 className="mb-2 text-3xl font-semibold tracking-tight text-zinc-100">
+              {models[0]?.name || "LomboClaw"}
+            </h1>
+            <p className="max-w-xl text-sm text-zinc-500">
+              GUI puxada pro OpenWebUI, mas com o arsenal do OpenClaw por baixo: terminal, arquivos, web, devices e ferramentas.
             </p>
 
-            {/* Quick action suggestions */}
-            <div className="grid grid-cols-2 gap-2 mt-8 max-w-lg w-full">
-              {[
-                { icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", text: "Analisar arquivo" },
-                { icon: "M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4", text: "Escrever código" },
-                { icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z", text: "Pesquisar na web" },
-                { icon: "M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", text: "Rodar comando" },
-              ].map((item, i) => (
+            <div className="mt-8 grid w-full max-w-xl gap-3">
+              {quickSuggestions.map((item) => (
                 <button
-                  key={i}
-                  onClick={() => {
-                    useAppStore.getState().setInputValue(item.text + ": ");
-                  }}
-                  className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900/50 transition-colors text-sm text-left"
+                  key={item}
+                  onClick={() => useAppStore.getState().setInputValue(item)}
+                  className="rounded-2xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-left text-sm text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0">
-                    <path d={item.icon} />
-                  </svg>
-                  {item.text}
+                  <div className="mb-1 text-xs text-zinc-500">Sugestão</div>
+                  <div>{item}</div>
                 </button>
               ))}
             </div>
           </div>
         ) : (
-          <div className="py-2">
+          <div className="mx-auto w-full max-w-4xl px-4 py-6">
             {messages.map((msg, i) => (
               <div key={msg.id}>
                 {i > 0 && msg.role !== messages[i - 1]?.role && (
-                  <div className="border-t border-zinc-800/30" />
+                  <div className="my-4 border-t border-zinc-800/40" />
                 )}
                 <MessageBubble message={msg} />
               </div>
@@ -125,7 +120,6 @@ export function ChatArea({ onSend, onAbort, onNewChat, models }: ChatAreaProps) 
         )}
       </div>
 
-      {/* Input */}
       <ChatInput onSend={onSend} onAbort={onAbort} />
     </div>
   );

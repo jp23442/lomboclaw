@@ -22,7 +22,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden safe-top safe-bottom">
+    <main className="flex h-screen w-screen overflow-hidden bg-[#171717] text-zinc-100 safe-top safe-bottom">
       {sidebarOpen && (
         <Sidebar
           onNewChat={newChat}
@@ -37,7 +37,8 @@ export default function Home() {
         onAbort={abortRun}
         onNewChat={newChat}
         models={gateway.models}
+        clientRef={clientRef}
       />
-    </div>
+    </main>
   );
 }

@@ -1,26 +1,39 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { GatewayModel } from "@/hooks/useGatewayInfo";
+import { OpenClawClient } from "@/lib/openclaw-client";
 
 interface ModelSelectorProps {
   models: GatewayModel[];
+  clientRef: React.RefObject<OpenClawClient | null>;
 }
 
-export function ModelSelector({ models }: ModelSelectorProps) {
+function getModelSubtitle(model?: GatewayModel | null) {
+  if (!model) return "Sem modelo selecionado";
+  const bits = [model.provider || "local"];
+  if (model.reasoning) bits.push("reasoning");
+  return bits.join(" • ");
+}
+
+export function ModelSelector({ models, clientRef }: ModelSelectorProps) {
   const { selectedModel, setSelectedModel } = useAppStore();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
-  const current = models.find((m) => m.id === selectedModel) || models[0];
-  const filtered = models.filter((m) =>
+  const unique = useMemo(
+    () => models.filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i),
+    [models]
+  );
+  const current = unique.find((m) => m.id === selectedModel) || unique[0];
+  const filtered = unique.filter((m) =>
     m.id.toLowerCase().includes(search.toLowerCase()) ||
-    m.name.toLowerCase().includes(search.toLowerCase())
+    m.name.toLowerCase().includes(search.toLowerCase()) ||
+    m.provider.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Close on click outside
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -30,77 +43,94 @@ export function ModelSelector({ models }: ModelSelectorProps) {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  if (models.length === 0) return null;
+  if (unique.length === 0) return null;
 
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-zinc-200 hover:bg-zinc-800 transition-colors"
+        className="group flex min-w-0 items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/70 px-3 py-2 text-left transition-colors hover:border-zinc-700 hover:bg-zinc-900"
       >
-        {current?.reasoning && (
-          <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
-        )}
-        <span className="truncate max-w-[200px]">{current?.name || current?.id || "Modelo"}</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0 text-zinc-500">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-black">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 3a9 9 0 100 18 9 9 0 000-18Z" />
+            <path d="M9.5 10a1.5 1.5 0 110 3 1.5 1.5 0 010-3Zm5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3Z" />
+          </svg>
+        </div>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold text-zinc-100">
+            {current?.name || current?.id || "Modelo"}
+          </div>
+          <div className="truncate text-[11px] text-zinc-500">{getModelSubtitle(current)}</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="ml-auto shrink-0 text-zinc-500 transition-transform group-data-[open=true]:rotate-180">
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-72 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl z-50 overflow-hidden">
-          {/* Search */}
-          <div className="p-2 border-b border-zinc-800">
+        <div className="absolute left-0 top-full z-50 mt-2 w-[340px] overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/40">
+          <div className="border-b border-zinc-800 p-3">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar modelo..."
-              className="w-full px-3 py-1.5 bg-zinc-800 rounded-lg text-sm text-zinc-200 placeholder-zinc-500 outline-none focus:ring-1 focus:ring-zinc-600"
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none transition focus:border-zinc-700"
               autoFocus
             />
           </div>
 
-          {/* Model list */}
-          <div className="max-h-64 overflow-y-auto py-1">
+          <div className="max-h-80 overflow-y-auto p-2">
             {filtered.length === 0 ? (
-              <p className="text-xs text-zinc-600 text-center py-4">Nenhum modelo encontrado</p>
+              <p className="py-6 text-center text-xs text-zinc-600">Nenhum modelo encontrado</p>
             ) : (
-              filtered.map((model) => (
-                <button
-                  key={model.id}
-                  onClick={() => {
-                    setSelectedModel(model.id);
-                    setOpen(false);
-                    setSearch("");
-                  }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors ${
-                    model.id === (selectedModel || models[0]?.id)
-                      ? "bg-zinc-800 text-zinc-100"
-                      : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
-                  }`}
-                >
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${
-                    model.reasoning ? "bg-purple-500" : "bg-blue-500"
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-mono text-xs truncate">{model.id}</div>
-                    {model.provider && (
-                      <div className="text-[10px] text-zinc-600">{model.provider}</div>
-                    )}
-                  </div>
-                  {model.reasoning && (
-                    <span className="text-[9px] text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded font-medium shrink-0">
-                      Reasoning
-                    </span>
-                  )}
-                  {model.id === (selectedModel || models[0]?.id) && (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" className="shrink-0">
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                  )}
-                </button>
-              ))
+              filtered.map((model) => {
+                const selected = model.id === (selectedModel || unique[0]?.id);
+                return (
+                  <button
+                    key={model.id}
+                    onClick={() => {
+                      setSelectedModel(model.id);
+                      setOpen(false);
+                      setSearch("");
+                      clientRef.current?.setModel(model.id).catch((e) =>
+                        console.warn("[ModelSelector] Failed to set model:", e)
+                      );
+                    }}
+                    className={`mb-1 w-full rounded-xl border px-3 py-3 text-left transition-colors ${
+                      selected
+                        ? "border-zinc-700 bg-zinc-900 text-zinc-100"
+                        : "border-transparent bg-transparent text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900/70 hover:text-zinc-200"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${model.reasoning ? "bg-violet-400" : "bg-emerald-400"}`} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium">{model.name || model.id}</div>
+                        <div className="truncate font-mono text-[11px] text-zinc-500">{model.id}</div>
+                        <div className="mt-1 flex flex-wrap gap-1.5">
+                          {model.provider && (
+                            <span className="rounded-full border border-zinc-800 px-2 py-0.5 text-[10px] text-zinc-500">
+                              {model.provider}
+                            </span>
+                          )}
+                          {model.reasoning && (
+                            <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-[10px] text-violet-300">
+                              reasoning
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {selected && (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" className="shrink-0">
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      )}
+                    </div>
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
