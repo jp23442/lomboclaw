@@ -1225,9 +1225,9 @@ function CronSection({ clientRef }: { clientRef: React.RefObject<OpenClawClient 
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-sm font-medium text-zinc-100">{job.name || job.id}</div>
-                  {job.schedule && <div className="mt-0.5 font-mono text-[11px] text-zinc-500">{job.schedule}</div>}
-                  {job.command && <div className="mt-1 text-[11px] text-zinc-400">{job.command}</div>}
-                  {job.message && <div className="mt-1 text-[11px] text-zinc-400">{job.message}</div>}
+                  {job.schedule && <div className="mt-0.5 font-mono text-[11px] text-zinc-500">{typeof job.schedule === "string" ? job.schedule : JSON.stringify(job.schedule)}</div>}
+                  {job.command && <div className="mt-1 text-[11px] text-zinc-400">{typeof job.command === "string" ? job.command : JSON.stringify(job.command)}</div>}
+                  {job.message && <div className="mt-1 text-[11px] text-zinc-400">{typeof job.message === "string" ? job.message : JSON.stringify(job.message)}</div>}
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge color={job.enabled !== false ? "emerald" : "red"}>
