@@ -71,13 +71,13 @@ export function StreamingMessage() {
   const isThinkingOnly = !!allThinking && !visibleContent;
 
   return (
-    <div className="py-6 px-4 md:px-0 fade-in">
-      <div className="max-w-3xl mx-auto flex gap-5">
+    <div className="py-8 px-4 md:px-0 fade-in">
+      <div className="max-w-3xl mx-auto flex gap-6">
         {/* Avatar */}
-        <div className="shrink-0 pt-0.5">
+        <div className="shrink-0 pt-1">
           <div className="relative">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 glow-ring">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 glow-ring">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
               </svg>
             </div>
@@ -85,7 +85,7 @@ export function StreamingMessage() {
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="text-[13px] font-semibold text-zinc-400 mb-2 tracking-wide">LomboClaw</div>
+          <div className="text-[13px] font-semibold text-zinc-400 mb-3 tracking-wide">LomboClaw</div>
 
           {/* Thinking block (streaming) */}
           {allThinking && (

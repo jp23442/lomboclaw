@@ -114,10 +114,10 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
   );
 
   return (
-    <div className="w-full px-5 pb-6 pt-4">
-      <div className="mx-auto max-w-[920px]">
+    <div className="w-full px-6 pb-8 pt-5">
+      <div className="mx-auto max-w-[960px]">
         {attachments.length > 0 && (
-          <div className="mb-4 flex flex-wrap gap-2.5 px-1">
+          <div className="mb-5 flex flex-wrap gap-3 px-1">
             {attachments.map((att, i) => (
               <div key={i} className="group/att relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] p-1.5 backdrop-blur-sm transition-all duration-200 hover:border-white/[0.1] hover:bg-white/[0.04]">
                 <img src={att.preview} alt={att.name} className="h-18 w-18 rounded-xl object-cover" />
@@ -135,7 +135,7 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
         )}
 
         <div
-          className={`rounded-[28px] border backdrop-blur-sm px-6 py-5 transition-all duration-300 ${
+          className={`rounded-[28px] border backdrop-blur-sm px-7 py-6 transition-all duration-300 ${
             dragOver 
               ? "border-emerald-500/40 bg-emerald-500/5 shadow-[0_0_40px_rgba(16,185,129,0.15)]" 
               : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.03] focus-within:border-white/[0.1] focus-within:bg-white/[0.03] shadow-[0_8px_40px_rgba(0,0,0,0.3)]"
@@ -160,10 +160,10 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
             placeholder={isConnected ? "Como posso ajudar?" : "Desconectado..."}
             disabled={!isConnected}
             rows={1}
-            className="max-h-[180px] min-h-[44px] w-full resize-none bg-transparent p-0 text-[16px] leading-relaxed text-zinc-100 outline-none placeholder:text-zinc-500/70 disabled:opacity-40 transition-opacity"
+            className="max-h-[200px] min-h-[48px] w-full resize-none bg-transparent p-0 text-[16px] leading-relaxed text-zinc-100 outline-none placeholder:text-zinc-500/70 disabled:opacity-40 transition-opacity"
           />
 
-          <div className="mt-4 flex items-center justify-between gap-2">
+          <div className="mt-5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-1">
               <input
                 ref={fileInputRef}

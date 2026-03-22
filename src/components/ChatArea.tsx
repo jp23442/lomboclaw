@@ -89,58 +89,58 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 && !streaming ? (
           <div className="flex h-full flex-col items-center justify-center px-6 text-center fade-in-up">
-            <div className="mb-6 flex items-center gap-5">
+            <div className="mb-10 flex items-center gap-6">
               <div className="relative">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-2xl shadow-emerald-500/25 float">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
+                <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-2xl shadow-emerald-500/25 float">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                   </svg>
                 </div>
-                <div className="absolute -inset-1 rounded-2xl bg-emerald-500/20 blur-xl -z-10" />
+                <div className="absolute -inset-1 rounded-3xl bg-emerald-500/20 blur-xl -z-10" />
               </div>
-              <h1 className="text-[44px] font-semibold tracking-tight bg-gradient-to-r from-zinc-100 to-zinc-400 bg-clip-text text-transparent">{currentModel}</h1>
+              <h1 className="text-5xl font-semibold tracking-tight bg-gradient-to-r from-zinc-100 to-zinc-400 bg-clip-text text-transparent">{currentModel}</h1>
             </div>
 
-            <div className="w-full max-w-[880px]">
+            <div className="w-full max-w-[920px] mb-16">
               <ChatInput onSend={onSend} onAbort={onAbort} />
             </div>
 
-            <div className="mt-10 w-full max-w-[480px] text-left">
-              <div className="mb-4 flex items-center gap-2.5 text-sm text-zinc-500">
-                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5">
+            <div className="w-full max-w-[560px] text-left">
+              <div className="mb-6 flex items-center gap-3 text-sm text-zinc-500">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5">
                     <path d="M13 3L4 14h7l-1 7 9-11h-7l1-7Z" />
                   </svg>
                 </div>
-                <span className="font-medium tracking-wide">Sugestões</span>
+                <span className="font-medium tracking-wide text-sm">Sugestões</span>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {suggestions.map((item, index) => (
                   <button
                     key={item.title}
                     onClick={() => useAppStore.getState().setInputValue(`${item.title} ${item.subtitle}`)}
-                    className="group block w-full text-left p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04] transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.08] hover:scale-[1.01] active:scale-[0.99]"
+                    className="group block w-full text-left p-5 rounded-2xl bg-white/[0.02] border border-white/[0.04] transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.08] hover:scale-[1.01] active:scale-[0.99]"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
-                    <div className="text-[17px] font-semibold text-zinc-200 group-hover:text-white transition-colors">{item.title}</div>
-                    <div className="text-sm text-zinc-500 group-hover:text-zinc-400 transition-colors">{item.subtitle}</div>
+                    <div className="text-lg font-semibold text-zinc-200 group-hover:text-white transition-colors">{item.title}</div>
+                    <div className="text-sm text-zinc-500 group-hover:text-zinc-400 transition-colors mt-1.5">{item.subtitle}</div>
                   </button>
                 ))}
               </div>
             </div>
           </div>
         ) : (
-          <div className="mx-auto w-full max-w-4xl px-5 py-8">
+          <div className="mx-auto w-full max-w-4xl px-6 py-12">
             {messages.map((msg, i) => (
               <div key={msg.id} className="fade-in">
                 {i > 0 && msg.role !== messages[i - 1]?.role && (
-                  <div className="my-6 border-t border-white/[0.04]" />
+                  <div className="my-8 border-t border-white/[0.04]" />
                 )}
                 <MessageBubble message={msg} />
               </div>
             ))}
             <StreamingMessage />
-            <div ref={messagesEndRef} className="h-6" />
+            <div ref={messagesEndRef} className="h-8" />
           </div>
         )}
       </div>
