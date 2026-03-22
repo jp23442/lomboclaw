@@ -38,6 +38,11 @@ export function useOpenClaw() {
       store.setConnectionState(state);
     };
 
+    client.onAuthError = (message) => {
+      console.warn("[OpenClaw] Auth error, logging out:", message);
+      useAppStore.getState().logout();
+    };
+
     client.onDelta = (runId, content) => {
       store.appendDelta(runId, content);
     };

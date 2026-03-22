@@ -56,6 +56,7 @@ export class OpenClawClient {
   public onStateChange: StateCallback = () => {};
   public onToolCall: (runId: string, tool: ToolCall) => void = () => {};
   public onToolResult: (runId: string, toolId: string, output: string) => void = () => {};
+  public onAuthError: ((message: string) => void) | null = null;
 
   constructor(config: OpenClawConfig) {
     this.config = config;
@@ -273,8 +274,12 @@ export class OpenClawClient {
         }
       }
 
-      console.error("[OpenClaw] Auth failed:", e, "code:", err?.code, "message:", err?.message, "details:", JSON.stringify(details));
+      const errMsg = (err?.message as string) || "Auth failed";
+      console.error("[OpenClaw] Auth failed:", e, "code:", err?.code, "message:", errMsg, "details:", JSON.stringify(details));
+      this.onAuthError?.(errMsg);
       this.onStateChange("error");
+      // Stop reconnecting on auth errors — password won't change
+      this.reconnectAttempts = this.maxReconnectAttempts;
     }
   }
 
