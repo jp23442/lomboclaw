@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ToolCall } from "@/lib/openclaw-client";
 
 interface ToolCallRendererProps {
@@ -10,12 +10,12 @@ interface ToolCallRendererProps {
 // Detect tool category from name
 function getToolCategory(name: string): "file-read" | "file-edit" | "file-write" | "bash" | "search" | "web" | "other" {
   const n = name.toLowerCase();
-  if (n === "read" || n.includes("file_read") || n.includes("readfile")) return "file-read";
-  if (n === "edit" || n.includes("file_edit") || n.includes("editfile") || n.includes("replace")) return "file-edit";
-  if (n === "write" || n.includes("file_write") || n.includes("writefile") || n.includes("createfile")) return "file-write";
-  if (n === "bash" || n.includes("execute") || n.includes("command") || n.includes("shell") || n.includes("terminal")) return "bash";
-  if (n === "glob" || n === "grep" || n.includes("search_file") || n.includes("find")) return "search";
-  if (n.includes("web") || n.includes("fetch") || n.includes("browse")) return "web";
+  if (n === "read" || n === "read_file" || n.includes("file_read") || n.includes("readfile") || n === "cat") return "file-read";
+  if (n === "edit" || n === "edit_file" || n.includes("file_edit") || n.includes("editfile") || n.includes("replace") || n === "patch" || n === "sed") return "file-edit";
+  if (n === "write" || n === "write_file" || n.includes("file_write") || n.includes("writefile") || n.includes("createfile") || n === "create") return "file-write";
+  if (n === "bash" || n === "shell" || n === "exec" || n === "run" || n.includes("execute") || n.includes("command") || n.includes("terminal") || n === "powershell") return "bash";
+  if (n === "glob" || n === "grep" || n === "ripgrep" || n === "find" || n === "search" || n.includes("search_file") || n === "list_dir" || n === "ls" || n === "find_files") return "search";
+  if (n.includes("web") || n.includes("fetch") || n.includes("browse") || n.includes("http") || n === "curl" || n.includes("ollama_web")) return "web";
   return "other";
 }
 
@@ -46,7 +46,8 @@ function StatusIcon({ state }: { state?: string }) {
       </svg>
     );
   }
-  return <div className="w-3.5 h-3.5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin shrink-0" />;
+  // pending or running
+  return <div className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />;
 }
 
 function ToolIcon({ category }: { category: string }) {
@@ -227,29 +228,46 @@ function ExpandedContent({ tool, category }: { tool: ToolCall; category: string 
 }
 
 // --- Main renderer ---
-export function ToolCallRenderer({ tool }: ToolCallRendererProps) {
+export function ToolCallRenderer({ tool, isStreaming = false }: ToolCallRendererProps & { isStreaming?: boolean }) {
   const [expanded, setExpanded] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const prevStateRef = useRef(tool.state);
   const category = getToolCategory(tool.name);
   const fileName = getFileName(tool.input);
   const fullPath = getFullPath(tool.input);
 
+  // Auto-collapse completed tools during streaming after 3s
+  useEffect(() => {
+    if (
+      isStreaming &&
+      tool.state === "done" &&
+      prevStateRef.current !== "done"
+    ) {
+      const timer = setTimeout(() => setCollapsed(true), 3000);
+      return () => clearTimeout(timer);
+    }
+    prevStateRef.current = tool.state;
+  }, [tool.state, isStreaming]);
+
   // Build summary label
   let summary = tool.name;
-  if (category === "file-read" && fileName) summary = `Lendo ${fileName}`;
-  else if (category === "file-edit" && fileName) summary = `Editando ${fileName}`;
-  else if (category === "file-write" && fileName) summary = `Criando ${fileName}`;
+  if (category === "file-read" && fileName) summary = `Read ${fileName}`;
+  else if (category === "file-edit" && fileName) summary = `Edit ${fileName}`;
+  else if (category === "file-write" && fileName) summary = `Write ${fileName}`;
   else if (category === "bash") {
     const cmd = (tool.input.command as string) || "";
-    const short = cmd.length > 60 ? cmd.slice(0, 57) + "..." : cmd;
-    summary = short || "Executando comando";
+    const short = cmd.length > 80 ? cmd.slice(0, 77) + "..." : cmd;
+    summary = short || "Run command";
   }
   else if (category === "search") {
-    const pattern = (tool.input.pattern as string) || (tool.input.query as string) || "";
-    summary = `Buscando "${pattern}"`;
+    const pattern = (tool.input.pattern as string) || (tool.input.query as string) || (tool.input.regex as string) || "";
+    const searchPath = (tool.input.path as string) || (tool.input.directory as string) || "";
+    const shortPath = searchPath ? searchPath.replace(/\\/g, "/").split("/").pop() : "";
+    summary = pattern ? `Search "${pattern}"${shortPath ? ` in ${shortPath}` : ""}` : `Search ${tool.name}`;
   }
   else if (category === "web") {
     const url = (tool.input.url as string) || "";
-    summary = url ? `Acessando ${url.slice(0, 50)}` : "Web request";
+    summary = url ? `Fetch ${url.slice(0, 60)}` : "Web request";
   }
 
   const hasContent = !!(
@@ -261,8 +279,27 @@ export function ToolCallRenderer({ tool }: ToolCallRendererProps) {
     tool.output
   );
 
+  const isDone = tool.state === "done";
+
+  // Collapsed: show minimal inline indicator
+  if (collapsed && !expanded) {
+    return (
+      <button
+        onClick={() => { setCollapsed(false); setExpanded(true); }}
+        className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors rounded-md hover:bg-zinc-800/50"
+        title={`${summary} — click to expand`}
+      >
+        <StatusIcon state={tool.state} />
+        <ToolIcon category={category} />
+        <span className="truncate max-w-[200px]">{summary}</span>
+      </button>
+    );
+  }
+
   return (
-    <div className="border border-zinc-800/80 rounded-lg overflow-hidden bg-zinc-900/30">
+    <div className={`border rounded-lg overflow-hidden transition-all duration-300 ${
+      isDone ? "border-zinc-800/50 bg-zinc-900/20" : "border-zinc-800/80 bg-zinc-900/30"
+    }`}>
       {/* Header */}
       <button
         onClick={() => hasContent && setExpanded(!expanded)}
@@ -272,7 +309,7 @@ export function ToolCallRenderer({ tool }: ToolCallRendererProps) {
       >
         <StatusIcon state={tool.state} />
         <ToolIcon category={category} />
-        <span className="text-zinc-300 truncate flex-1 text-left">{summary}</span>
+        <span className={`truncate flex-1 text-left ${isDone ? "text-zinc-500" : "text-zinc-300"}`}>{summary}</span>
 
         {fullPath && category !== "bash" && (
           <span className="text-[10px] text-zinc-600 font-mono truncate max-w-[200px] hidden md:block">

@@ -36,7 +36,7 @@ type SidebarMode = "main" | "models" | "devices";
 
 export function Sidebar({ onNewChat, models, devices, health, onRefresh }: SidebarProps) {
   const { sessions, activeSessionId, setActiveSession, deleteSession, toggleSidebar, connectionState } = useAppStore();
-  const [search, setSearch] = useState("");
+  const [search, setBuscar] = useState("");
   const [mode, setMode] = useState<SidebarMode>("main");
 
   const statusColor = {
@@ -67,25 +67,25 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
   const navItems = [
     {
       key: "main" as SidebarMode,
-      label: "New Chat",
+      label: "Nova Conversa",
       icon: <path d="M12 5v14M5 12h14" />,
       action: onNewChat,
     },
     {
       key: "main" as SidebarMode,
-      label: "Search",
+      label: "Buscar",
       icon: <><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></>,
       action: () => setMode("main"),
     },
     {
       key: "models" as SidebarMode,
-      label: "Models",
+      label: "Modelos",
       icon: <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />,
       action: () => setMode("models"),
     },
     {
       key: "devices" as SidebarMode,
-      label: "Workspace",
+      label: "Dispositivos",
       icon: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /></>,
       action: () => setMode("devices"),
     },
@@ -134,14 +134,12 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
     <aside className="flex h-full w-[308px] flex-col border-r border-zinc-900 bg-[#0b0b0c] text-zinc-100">
       <div className="flex items-center justify-between px-5 pb-5 pt-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="8.5" />
-              <path d="M15.5 7.5v9" />
-              <path d="M8.5 12a3.5 3.5 0 107 0 3.5 3.5 0 10-7 0Z" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
           </div>
-          <div className="text-[15px] font-semibold text-zinc-100">Open WebUI</div>
+          <div className="text-[15px] font-semibold text-zinc-100">LomboClaw</div>
         </div>
         <button
           onClick={toggleSidebar}
@@ -178,35 +176,21 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search chats"
+              onChange={(e) => setBuscar(e.target.value)}
+              placeholder="Buscar conversas"
               className="w-full rounded-xl border border-zinc-900 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-200 outline-none transition placeholder:text-zinc-600 focus:border-zinc-800"
             />
           </div>
 
           <div className="flex-1 overflow-y-auto px-4">
-            <div className="mb-5">
-              <div className="mb-2 px-2 text-xs text-zinc-600">Channels</div>
-              <div className="rounded-xl px-2 py-2 text-sm text-zinc-300 hover:bg-zinc-900"># general</div>
-            </div>
-
-            <div className="mb-5">
-              <div className="mb-2 px-2 text-xs text-zinc-600">Folders</div>
-              <div className="space-y-1">
-                <div className="rounded-xl px-2 py-2 text-sm text-zinc-300 hover:bg-zinc-900">💵 Finance</div>
-                <div className="rounded-xl px-2 py-2 text-sm text-zinc-300 hover:bg-zinc-900">📕 Study</div>
-              </div>
-            </div>
-
             <div>
-              <div className="mb-2 px-2 text-xs text-zinc-600">Chats</div>
               {filtered.length === 0 ? (
                 <p className="px-2 py-8 text-xs text-zinc-600">{search ? "Nada encontrado" : "Nenhuma conversa"}</p>
               ) : (
                 <>
-                  {renderGroup("Today", today)}
-                  {renderGroup("Yesterday", yesterday)}
-                  {renderGroup("Older", older)}
+                  {renderGroup("Hoje", today)}
+                  {renderGroup("Ontem", yesterday)}
+                  {renderGroup("Antigas", older)}
                 </>
               )}
             </div>
@@ -216,7 +200,7 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
 
       {mode === "models" && (
         <div className="flex-1 overflow-y-auto px-4 pb-4">
-          <div className="mb-3 px-2 text-xs text-zinc-600">Available models</div>
+          <div className="mb-3 px-2 text-xs text-zinc-600">Modelos disponíveis</div>
           <div className="space-y-2">
             {models.length === 0 ? (
               <p className="px-2 py-8 text-xs text-zinc-600">Nenhum modelo carregado</p>
@@ -238,7 +222,7 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
 
       {mode === "devices" && (
         <div className="flex-1 overflow-y-auto px-4 pb-4">
-          <div className="mb-3 px-2 text-xs text-zinc-600">Workspace / devices</div>
+          <div className="mb-3 px-2 text-xs text-zinc-600">Gateway / Dispositivos</div>
           <div className="space-y-2">
             <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-3">
               <div className="mb-2 flex items-center gap-2 text-sm text-zinc-200">
@@ -273,10 +257,10 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
 
       <div className="border-t border-zinc-900 px-3 py-4">
         <div className="flex items-center gap-3 rounded-2xl px-2 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-[11px] font-semibold text-black">TB</div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-[11px] font-semibold text-black">JP</div>
           <div className="min-w-0">
-            <div className="truncate text-sm text-zinc-200">Tim Baek</div>
-            <div className="text-[11px] text-zinc-600">local session</div>
+            <div className="truncate text-sm text-zinc-200">João</div>
+            <div className="text-[11px] text-zinc-600">sessão local</div>
           </div>
         </div>
       </div>

@@ -155,7 +155,7 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            placeholder={isConnected ? "How can I help you today?" : "Desconectado..."}
+            placeholder={isConnected ? "Como posso ajudar?" : "Desconectado..."}
             disabled={!isConnected}
             rows={1}
             className="max-h-[180px] min-h-[40px] w-full resize-none bg-transparent p-0 text-[16px] leading-relaxed text-zinc-100 outline-none placeholder:text-zinc-500 disabled:opacity-50"

@@ -48,15 +48,26 @@ export function useGatewayInfo(clientRef: React.RefObject<OpenClawClient | null>
     setInfo((prev) => ({ ...prev, loading: true }));
 
     try {
-      const [health, models, devices] = await Promise.allSettled([
+      const [health, models, devices, config] = await Promise.allSettled([
         client.getHealth(),
         client.listModels(),
         client.listDevices(),
+        client.getConfig(),
       ]);
+
+      const catalogModels = models.status === "fulfilled" ? parseModels(models.value) : [];
+      const configModels = config.status === "fulfilled" ? parseConfigModels(config.value) : [];
+
+      // Merge: catalog first, then config models not already in catalog
+      const catalogIds = new Set(catalogModels.map((m) => m.id));
+      const merged = [
+        ...catalogModels,
+        ...configModels.filter((m) => !catalogIds.has(m.id)),
+      ];
 
       setInfo({
         health: health.status === "fulfilled" ? parseHealth(health.value) : null,
-        models: models.status === "fulfilled" ? parseModels(models.value) : [],
+        models: merged,
         devices: devices.status === "fulfilled" ? parseDevices(devices.value) : [],
         activeModel: null,
         loading: false,
@@ -96,13 +107,48 @@ function parseModels(raw: unknown): GatewayModel[] {
 
   return models.map((m) => {
     const model = m as Record<string, unknown>;
+    const rawId = (model.id as string) || "";
+    const provider = (model.provider as string) || "";
+    // Compose full ID as provider/model for config compatibility
+    const id = provider && !rawId.includes("/") ? `${provider}/${rawId}` : rawId;
     return {
-      id: (model.id as string) || "",
-      name: (model.name as string) || (model.id as string) || "",
-      provider: (model.provider as string) || "",
+      id,
+      name: (model.name as string) || rawId,
+      provider,
       reasoning: model.reasoning as boolean,
     };
   });
+}
+
+function parseConfigModels(raw: unknown): GatewayModel[] {
+  if (!raw || typeof raw !== "object") return [];
+  const r = raw as Record<string, unknown>;
+  const config = r.config as Record<string, unknown> | undefined;
+  if (!config) return [];
+  const models = config.models as Record<string, unknown> | undefined;
+  if (!models) return [];
+  const providers = models.providers as Record<string, unknown> | undefined;
+  if (!providers) return [];
+
+  const result: GatewayModel[] = [];
+  for (const [providerKey, providerVal] of Object.entries(providers)) {
+    if (!providerVal || typeof providerVal !== "object") continue;
+    const p = providerVal as Record<string, unknown>;
+    const modelList = p.models as unknown[];
+    if (!Array.isArray(modelList)) continue;
+    for (const m of modelList) {
+      const model = m as Record<string, unknown>;
+      const id = model.id as string;
+      if (!id) continue;
+      result.push({
+        id: `${providerKey}/${id}`,
+        name: (model.name as string) || id,
+        provider: providerKey,
+        reasoning: model.reasoning as boolean,
+      });
+    }
+  }
+  return result;
 }
 
 function parseDevices(raw: unknown): GatewayDevice[] {

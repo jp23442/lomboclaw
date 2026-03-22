@@ -52,6 +52,7 @@ export class OpenClawClient {
   public onMessage: MessageCallback = () => {};
   public onDelta: DeltaCallback = () => {};
   public onThinking: ThinkingCallback = () => {};
+  public onThinkingFull: ((runId: string, fullText: string) => void) | null = null;
   public onStateChange: StateCallback = () => {};
   public onToolCall: (runId: string, tool: ToolCall) => void = () => {};
   public onToolResult: (runId: string, toolId: string, output: string) => void = () => {};
@@ -159,10 +160,13 @@ export class OpenClawClient {
       this.handleChallenge(payload);
     } else if (event === "chat") {
       this.handleChatEvent(payload);
+    } else if (event === "agent") {
+      this.handleAgentEvent(payload);
     } else if (event === "tick") {
       // Respond to heartbeat to keep connection alive
       this.ws?.send(JSON.stringify({ type: "pong" }));
     } else {
+      console.debug("[OpenClaw] Unhandled event:", event, JSON.stringify(payload).slice(0, 200));
       this.onEvent(event, payload);
     }
   }
@@ -274,6 +278,80 @@ export class OpenClawClient {
     }
   }
 
+  private handleAgentEvent(payload: Record<string, unknown>) {
+    const stream = payload.stream as string;
+    const runId = payload.runId as string;
+    const data = payload.data as Record<string, unknown> | undefined;
+
+    // Log FULL payload for all non-assistant events to debug structure
+    if (stream !== "assistant") {
+      console.log("[OpenClaw] agent event FULL:", JSON.stringify(payload).slice(0, 1000));
+    }
+
+    if (stream === "tool") {
+      // The gateway sends tool events with data containing tool info.
+      // Try multiple field name conventions to be robust.
+      const d = data || payload;
+
+      // Phase might be in data.phase, or combined in data.tool ("start:read")
+      let phase = (d.phase as string) || "";
+      let toolName = (d.name as string) || (d.tool_name as string) || "";
+      const toolId = (d.id as string) || (d.call as string) || (d.toolCallId as string) || `tool-${Date.now()}`;
+      const input = (d.input as Record<string, unknown>) || (d.args as Record<string, unknown>) || {};
+
+      // Handle combined "tool" field like "start:read" or "result:read"
+      const combinedTool = d.tool as string;
+      if (combinedTool && combinedTool.includes(":")) {
+        const parts = combinedTool.split(":");
+        if (!phase) phase = parts[0];
+        if (!toolName) toolName = parts.slice(1).join(":");
+      } else if (combinedTool && !toolName) {
+        toolName = combinedTool;
+      }
+
+      if (!toolName) toolName = "unknown";
+
+      // Extract meta info (file paths etc)
+      const meta = (d.meta as string) || "";
+      if (meta && !input.file_path && !input.path) {
+        // Parse meta like "from ~\Documents\openclaw-ui\src\components\Foo.tsx"
+        const metaPath = meta.replace(/^(from|to)\s+/, "").trim();
+        if (metaPath) {
+          input.file_path = metaPath;
+        }
+      }
+
+      console.log(`[OpenClaw] tool: phase=${phase} name=${toolName} id=${toolId} meta=${meta}`);
+
+      if (phase === "start" || phase === "call") {
+        this.onToolCall(runId, {
+          id: toolId,
+          name: toolName,
+          input,
+          state: "running",
+        });
+      } else if (phase === "result") {
+        const result = d.result as string | Record<string, unknown> | undefined;
+        const output = typeof result === "string" ? result : result ? JSON.stringify(result) : (meta || "done");
+        this.onToolResult(runId, toolId, output);
+      } else if (phase === "error") {
+        const errMsg = (d.error as string) || (d.message as string) || "Error";
+        this.onToolResult(runId, toolId, `Error: ${errMsg}`);
+      }
+    } else if (stream === "assistant") {
+      // Assistant text stream — each event has FULL accumulated text.
+      // Only route to thinking if isReasoning flag is set.
+      const text = (payload.text as string) || (data?.text as string) || "";
+      const isReasoning = !!(payload.isReasoning || (data && data.isReasoning));
+
+      if (isReasoning && text) {
+        this.onThinkingFull?.(runId, text);
+      }
+    } else if (stream === "lifecycle" && data) {
+      console.log("[OpenClaw] lifecycle:", JSON.stringify(data).slice(0, 300));
+    }
+  }
+
   private handleChatEvent(payload: Record<string, unknown>) {
     const state = payload.state as string;
     const runId = payload.runId as string;
@@ -282,6 +360,19 @@ export class OpenClawClient {
 
     if (!message) return;
     const content = message.content;
+
+    // Debug: log raw chat events to understand gateway format
+    if (state === "delta") {
+      console.debug("[OpenClaw] chat delta:", JSON.stringify({ state, content: Array.isArray(content) ? content.map((b: Record<string, unknown>) => ({ type: b.type, hasText: !!b.text, hasThinking: !!b.thinking, hasReasoning: !!b.reasoning })) : typeof content }).slice(0, 300));
+    } else {
+      console.debug("[OpenClaw] chat event:", JSON.stringify({ state, messageKeys: Object.keys(message), contentType: Array.isArray(content) ? "array" : typeof content }).slice(0, 300));
+    }
+
+    // Check for thinking/reasoning at message level (some providers put it here)
+    const msgThinking = (message.thinking as string) || (message.reasoning as string) || "";
+    if (msgThinking && state === "delta") {
+      this.onThinking(runId, msgThinking);
+    }
 
     if (Array.isArray(content)) {
       for (const block of content) {
@@ -295,8 +386,9 @@ export class OpenClawClient {
           });
         } else if (b.type === "tool_result") {
           this.onToolResult(runId, b.tool_use_id as string, b.content as string);
-        } else if (b.type === "thinking") {
-          if (state === "delta") this.onThinking(runId, b.thinking as string);
+        } else if (b.type === "thinking" || b.type === "reasoning") {
+          const thinkText = (b.thinking as string) || (b.reasoning as string) || (b.text as string) || "";
+          if (state === "delta" && thinkText) this.onThinking(runId, thinkText);
         } else if (b.type === "text") {
           if (state === "delta") this.onDelta(runId, b.text as string);
         }
@@ -306,6 +398,8 @@ export class OpenClawClient {
     }
 
     if (state === "final" || state === "error" || state === "aborted") {
+      const isThinkingBlock = (b: Record<string, unknown>) => b.type === "thinking" || b.type === "reasoning";
+
       const textContent = Array.isArray(content)
         ? (content as Record<string, unknown>[])
             .filter((b) => b.type === "text")
@@ -315,10 +409,10 @@ export class OpenClawClient {
 
       const thinkingContent = Array.isArray(content)
         ? (content as Record<string, unknown>[])
-            .filter((b) => b.type === "thinking")
-            .map((b) => b.thinking)
+            .filter(isThinkingBlock)
+            .map((b) => (b.thinking as string) || (b.reasoning as string) || (b.text as string) || "")
             .join("")
-        : "";
+        : msgThinking;
 
       this.onMessage({
         id: runId,
@@ -366,7 +460,7 @@ export class OpenClawClient {
     });
   }
 
-  async sendMessage(text: string, attachments?: { type: string; mimeType: string; content: string }[], model?: string | null): Promise<void> {
+  async sendMessage(text: string, attachments?: { type: string; mimeType: string; content: string }[]): Promise<void> {
     const params: Record<string, unknown> = {
       sessionKey: this.sessionKey,
       message: text,
@@ -375,9 +469,6 @@ export class OpenClawClient {
     };
     if (attachments && attachments.length > 0) {
       params.attachments = attachments;
-    }
-    if (model) {
-      params.model = model;
     }
     await this.sendRequest("chat.send", params, 900000);
   }
@@ -410,6 +501,155 @@ export class OpenClawClient {
 
   async getToolsCatalog(): Promise<unknown> {
     return this.sendRequest("tools.catalog", {});
+  }
+
+  async getConfig(): Promise<unknown> {
+    return this.sendRequest("config.get", {});
+  }
+
+  async setModel(modelId: string): Promise<void> {
+    const configResult = await this.sendRequest("config.get", {}) as Record<string, unknown>;
+    const baseHash = configResult?.hash as string;
+    const patch = JSON.stringify({
+      agents: { defaults: { model: { primary: modelId } } },
+    });
+    await this.sendRequest("config.patch", { raw: patch, baseHash });
+  }
+
+  // ---- Generic RPC (for Settings panel to call any method) ----
+  async rpc<T = unknown>(method: string, params: Record<string, unknown> = {}, timeoutMs = 30000): Promise<T> {
+    return this.sendRequest(method, params, timeoutMs) as Promise<T>;
+  }
+
+  // ---- Config ----
+  async getConfigSchema(): Promise<unknown> {
+    return this.sendRequest("config.schema", {});
+  }
+
+  async patchConfig(patch: Record<string, unknown>, baseHash: string): Promise<unknown> {
+    return this.sendRequest("config.patch", { raw: JSON.stringify(patch), baseHash });
+  }
+
+  // ---- Sessions ----
+  async getSession(sessionKey: string): Promise<unknown> {
+    return this.sendRequest("session.get", { sessionKey });
+  }
+
+  async deleteSessionRemote(sessionKey: string): Promise<unknown> {
+    return this.sendRequest("session.delete", { sessionKey });
+  }
+
+  async clearSession(sessionKey: string): Promise<unknown> {
+    return this.sendRequest("session.clear", { sessionKey });
+  }
+
+  // ---- Agents ----
+  async listAgents(): Promise<unknown> {
+    return this.sendRequest("agents.list", {});
+  }
+
+  async getAgent(agentId: string): Promise<unknown> {
+    return this.sendRequest("agents.get", { agentId });
+  }
+
+  async createAgent(agent: Record<string, unknown>): Promise<unknown> {
+    return this.sendRequest("agents.create", agent);
+  }
+
+  async updateAgent(agentId: string, patch: Record<string, unknown>): Promise<unknown> {
+    return this.sendRequest("agents.update", { agentId, ...patch });
+  }
+
+  async deleteAgent(agentId: string): Promise<unknown> {
+    return this.sendRequest("agents.delete", { agentId });
+  }
+
+  // ---- Skills ----
+  async listSkills(): Promise<unknown> {
+    return this.sendRequest("skills.list", {});
+  }
+
+  async installSkill(skill: Record<string, unknown>): Promise<unknown> {
+    return this.sendRequest("skills.install", skill);
+  }
+
+  async uninstallSkill(skillId: string): Promise<unknown> {
+    return this.sendRequest("skills.uninstall", { skillId });
+  }
+
+  // ---- Cron ----
+  async listCron(): Promise<unknown> {
+    return this.sendRequest("cron.list", {});
+  }
+
+  async addCron(job: Record<string, unknown>): Promise<unknown> {
+    return this.sendRequest("cron.add", job);
+  }
+
+  async updateCron(jobId: string, patch: Record<string, unknown>): Promise<unknown> {
+    return this.sendRequest("cron.update", { jobId, ...patch });
+  }
+
+  async removeCron(jobId: string): Promise<unknown> {
+    return this.sendRequest("cron.remove", { jobId });
+  }
+
+  // ---- TTS ----
+  async listTTSVoices(): Promise<unknown> {
+    return this.sendRequest("tts.voices", {});
+  }
+
+  async getTTSConfig(): Promise<unknown> {
+    return this.sendRequest("tts.config", {});
+  }
+
+  // ---- Exec Approvals ----
+  async listApprovals(): Promise<unknown> {
+    return this.sendRequest("exec.approvals.list", {});
+  }
+
+  async pendingApprovals(): Promise<unknown> {
+    return this.sendRequest("exec.approvals.pending", {});
+  }
+
+  async approveExec(requestId: string): Promise<unknown> {
+    return this.sendRequest("exec.approvals.approve", { requestId });
+  }
+
+  async denyExec(requestId: string): Promise<unknown> {
+    return this.sendRequest("exec.approvals.deny", { requestId });
+  }
+
+  // ---- Usage ----
+  async getUsage(): Promise<unknown> {
+    return this.sendRequest("usage.status", {});
+  }
+
+  async getUsageCost(): Promise<unknown> {
+    return this.sendRequest("usage.cost", {});
+  }
+
+  // ---- Logs ----
+  async tailLogs(lines = 50): Promise<unknown> {
+    return this.sendRequest("logs.tail", { lines });
+  }
+
+  // ---- Updates ----
+  async checkUpdate(): Promise<unknown> {
+    return this.sendRequest("update.check", {});
+  }
+
+  async runUpdate(): Promise<unknown> {
+    return this.sendRequest("update.run", {}, 120000);
+  }
+
+  // ---- Device Pairing ----
+  async approveDevice(requestId: string, scopes: string[]): Promise<unknown> {
+    return this.sendRequest("device.pair.approve", { requestId, scopes });
+  }
+
+  async revokeDevice(deviceId: string): Promise<unknown> {
+    return this.sendRequest("device.pair.revoke", { deviceId });
   }
 
   getSessionKey() { return this.sessionKey; }

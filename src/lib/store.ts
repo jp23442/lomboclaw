@@ -39,6 +39,7 @@ interface AppState {
   setStreaming: (s: StreamingState | null) => void;
   appendDelta: (runId: string, content: string) => void;
   appendThinking: (runId: string, thinking: string) => void;
+  setThinkingFull: (runId: string, fullText: string) => void;
   addToolCall: (runId: string, tool: ToolCall) => void;
   updateToolCall: (runId: string, toolId: string, update: Partial<ToolCall>) => void;
 
@@ -189,6 +190,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       return {
         streaming: { ...s.streaming, thinking: s.streaming.thinking + thinking },
+      };
+    });
+  },
+  setThinkingFull: (runId, fullText) => {
+    set((s) => {
+      if (!s.streaming || s.streaming.runId !== runId) {
+        return { streaming: { runId, content: "", thinking: fullText, toolCalls: [] } };
+      }
+      return {
+        streaming: { ...s.streaming, thinking: fullText },
       };
     });
   },

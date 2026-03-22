@@ -1,11 +1,28 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 interface ThinkingBlockProps {
   thinking: string;
   isStreaming?: boolean;
   defaultOpen?: boolean;
+}
+
+function summarize(text: string): string {
+  // Grab the first meaningful line as a preview
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) return "...";
+  const first = lines[0].replace(/^(##?\s*|[-*]\s*|\d+\.\s*)/, "").trim();
+  return first.length > 80 ? first.slice(0, 80) + "..." : first;
+}
+
+function formatDuration(wordCount: number): string {
+  // Rough estimate: ~4 words per second thinking speed
+  const secs = Math.round(wordCount / 4);
+  if (secs < 60) return `${secs}s`;
+  const mins = Math.floor(secs / 60);
+  const rem = secs % 60;
+  return rem > 0 ? `${mins}m ${rem}s` : `${mins}m`;
 }
 
 export function ThinkingBlock({ thinking, isStreaming = false, defaultOpen = false }: ThinkingBlockProps) {
@@ -19,74 +36,84 @@ export function ThinkingBlock({ thinking, isStreaming = false, defaultOpen = fal
     }
   }, [thinking, open, isStreaming]);
 
-  // Auto-close when streaming finishes and text content starts appearing
+  // Auto-close when streaming finishes
   useEffect(() => {
     if (!isStreaming && defaultOpen) {
       setOpen(false);
     }
   }, [isStreaming, defaultOpen]);
 
-  const wordCount = thinking.split(/\s+/).filter(Boolean).length;
-  const duration = isStreaming ? "pensando..." : `${wordCount} palavras`;
+  const wordCount = useMemo(() => thinking.split(/\s+/).filter(Boolean).length, [thinking]);
+  const preview = useMemo(() => summarize(thinking), [thinking]);
 
   return (
-    <div className="mb-3">
+    <div className="mb-2">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors py-1 group"
+        className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-400 transition-colors py-0.5 group w-full text-left"
       >
-        {/* Brain icon */}
-        <div className={`flex items-center justify-center w-5 h-5 rounded ${
-          isStreaming ? "text-purple-400" : "text-zinc-500 group-hover:text-zinc-400"
-        }`}>
-          {isStreaming ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-pulse">
-              <path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 01-2 2h-4a2 2 0 01-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z" />
-              <path d="M10 21h4M12 17v4" />
-            </svg>
-          ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 01-2 2h-4a2 2 0 01-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z" />
-              <path d="M10 21h4M12 17v4" />
-            </svg>
-          )}
-        </div>
+        {/* Chevron */}
+        <svg
+          width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          className={`shrink-0 transition-transform ${open ? "rotate-90" : ""} ${isStreaming ? "text-purple-400" : "text-zinc-600"}`}
+        >
+          <path d="M9 18l6-6-6-6" />
+        </svg>
 
-        <span className={isStreaming ? "text-purple-400" : ""}>
-          {isStreaming ? "Pensando" : "Raciocínio"}
+        <span className={`shrink-0 ${isStreaming ? "text-purple-400" : "text-zinc-500"}`}>
+          {isStreaming ? "Pensando" : "Pensou"}
         </span>
 
-        {isStreaming && (
-          <span className="flex gap-0.5">
+        {isStreaming ? (
+          <span className="flex gap-0.5 shrink-0">
             <span className="thinking-dot w-1 h-1 rounded-full bg-purple-400" />
             <span className="thinking-dot w-1 h-1 rounded-full bg-purple-400" />
             <span className="thinking-dot w-1 h-1 rounded-full bg-purple-400" />
           </span>
+        ) : (
+          <>
+            <span className="text-zinc-600 shrink-0">
+              por {formatDuration(wordCount)}
+            </span>
+            {!open && (
+              <span className="text-zinc-600/60 truncate ml-1 italic">
+                {preview}
+              </span>
+            )}
+          </>
         )}
-
-        {!isStreaming && (
-          <span className="text-zinc-600">{duration}</span>
-        )}
-
-        <svg
-          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-          className={`transition-transform ${open ? "rotate-180" : ""}`}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
       </button>
 
       {open && (
         <div
           ref={contentRef}
-          className="mt-1 px-3 py-2.5 rounded-lg border-l-2 border-purple-500/30 bg-purple-950/10 max-h-64 overflow-y-auto"
+          className="mt-1 ml-3 pl-3 border-l border-zinc-800 max-h-80 overflow-y-auto thinking-expand"
         >
-          <p className="text-xs text-zinc-500 whitespace-pre-wrap leading-relaxed font-mono">
-            {thinking}
+          <div className="text-[12px] text-zinc-500/80 whitespace-pre-wrap leading-relaxed space-y-1">
+            {thinking.split("\n").map((line, i) => {
+              const trimmed = line.trim();
+              if (!trimmed) return <div key={i} className="h-2" />;
+              // Headers
+              if (trimmed.startsWith("## ")) {
+                return <div key={i} className="text-zinc-400 font-medium mt-2">{trimmed.replace(/^##\s*/, "")}</div>;
+              }
+              if (trimmed.startsWith("# ")) {
+                return <div key={i} className="text-zinc-300 font-medium mt-2">{trimmed.replace(/^#\s*/, "")}</div>;
+              }
+              // Bullet points
+              if (/^[-*]\s/.test(trimmed)) {
+                return <div key={i} className="pl-3">{trimmed}</div>;
+              }
+              // Numbered items
+              if (/^\d+\.\s/.test(trimmed)) {
+                return <div key={i} className="pl-3">{trimmed}</div>;
+              }
+              return <div key={i}>{trimmed}</div>;
+            })}
             {isStreaming && (
               <span className="inline-block w-0.5 h-[1em] bg-purple-400 animate-pulse ml-0.5 align-text-bottom" />
             )}
-          </p>
+          </div>
         </div>
       )}
     </div>

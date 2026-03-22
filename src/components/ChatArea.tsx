@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { MessageBubble } from "./MessageBubble";
 import { StreamingMessage } from "./StreamingMessage";
 import { ChatInput, Attachment } from "./ChatInput";
 import { ModelSelector } from "./ModelSelector";
+import { Settings } from "./Settings";
 import { GatewayModel } from "@/hooks/useGatewayInfo";
 import { OpenClawClient } from "@/lib/openclaw-client";
 
@@ -18,14 +19,15 @@ interface ChatAreaProps {
 }
 
 const suggestions = [
-  { title: "Show me a code snippet", subtitle: "of a website's sticky header" },
-  { title: "Help me study", subtitle: "vocabulary for a college entrance exam" },
-  { title: "Overcome procrastination", subtitle: "give me tips" },
+  { title: "Analise um arquivo", subtitle: "leia e explique o código" },
+  { title: "Escreva um script", subtitle: "para automatizar uma tarefa" },
+  { title: "Pesquise na web", subtitle: "e me traga um resumo" },
 ];
 
 export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: ChatAreaProps) {
   const { sessions, activeSessionId, streaming, sidebarOpen, toggleSidebar, connectionState } = useAppStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   const messages = activeSession?.messages ?? [];
@@ -60,7 +62,7 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
           )}
           <div>
             <ModelSelector models={models} clientRef={clientRef} />
-            <button className="text-sm text-zinc-500 transition hover:text-zinc-300">Set as default</button>
+            <button className="text-sm text-zinc-500 transition hover:text-zinc-300">Definir como padrão</button>
           </div>
         </div>
 
@@ -68,13 +70,17 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
           <button className="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-200" title="Status">
             <span className={`block h-2 w-2 rounded-full ${statusDot}`} />
           </button>
-          <button className="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-200" title="Configurações">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-200"
+            title="Configurações"
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path d="M4 6h10M4 18h16M14 6l2-2 2 2M8 18l2 2 2-2" />
             </svg>
           </button>
           <button className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-[11px] font-semibold text-black" title="Perfil">
-            TB
+            JP
           </button>
         </div>
       </header>
@@ -83,11 +89,9 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
         {messages.length === 0 && !streaming ? (
           <div className="flex h-full flex-col items-center justify-center px-6 text-center">
             <div className="mb-4 flex items-center gap-4">
-              <div className="flex h-13 w-13 items-center justify-center rounded-full bg-white text-black">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="8.5" />
-                  <path d="M15.5 7.5v9" />
-                  <path d="M8.5 12a3.5 3.5 0 107 0 3.5 3.5 0 10-7 0Z" />
+              <div className="flex h-13 w-13 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-700 shadow-lg shadow-emerald-900/30">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                 </svg>
               </div>
               <h1 className="text-[40px] font-medium tracking-tight text-zinc-100">{currentModel}</h1>
@@ -102,7 +106,7 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M13 3L4 14h7l-1 7 9-11h-7l1-7Z" />
                 </svg>
-                Suggested
+                Sugestões
               </div>
               <div className="space-y-4">
                 {suggestions.map((item) => (
@@ -135,6 +139,8 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
       </div>
 
       {(messages.length > 0 || streaming) && <ChatInput onSend={onSend} onAbort={onAbort} />}
+
+      {settingsOpen && <Settings clientRef={clientRef} onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

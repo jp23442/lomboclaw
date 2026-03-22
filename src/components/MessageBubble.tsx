@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ChatMessage } from "@/lib/openclaw-client";
@@ -12,17 +12,52 @@ interface MessageBubbleProps {
   message: ChatMessage;
 }
 
+/**
+ * Strips <think>/<thinking> tags from content and extracts thinking text.
+ * Handles cases where the gateway didn't promote tags to blocks.
+ */
+function extractThinkingFromContent(content: string): { thinking: string; content: string } {
+  if (!content) return { thinking: "", content: "" };
+
+  let thinking = "";
+  let visible = "";
+  let remaining = content;
+
+  const thinkRegex = /<(think(?:ing)?)>([\s\S]*?)<\/\1>/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = thinkRegex.exec(remaining)) !== null) {
+    visible += remaining.slice(lastIndex, match.index);
+    thinking += (thinking ? "\n" : "") + match[2];
+    lastIndex = match.index + match[0].length;
+  }
+
+  visible += remaining.slice(lastIndex);
+  return { thinking: thinking.trim(), content: visible.trim() };
+}
+
 export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const isError = message.state === "error";
   const isSystem = message.role === "system";
   const [copied, setCopied] = useState(false);
 
+  // Parse think tags from content (in case gateway didn't promote them)
+  const parsed = useMemo(() => {
+    if (isUser || !message.content) return { thinking: "", content: message.content };
+    return extractThinkingFromContent(message.content);
+  }, [message.content, isUser]);
+
+  // Combine structured thinking + extracted thinking
+  const allThinking = [message.thinking, parsed.thinking].filter(Boolean).join("\n");
+  const visibleContent = parsed.content;
+
   const copyContent = useCallback(() => {
-    navigator.clipboard.writeText(message.content);
+    navigator.clipboard.writeText(visibleContent || message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [message.content]);
+  }, [visibleContent, message.content]);
 
   if (isSystem && !isError) return null;
 
@@ -61,8 +96,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           </div>
 
           {/* Thinking */}
-          {message.thinking && (
-            <ThinkingBlock thinking={message.thinking} />
+          {allThinking && (
+            <ThinkingBlock thinking={allThinking} />
           )}
 
           {/* Tool calls */}
@@ -79,7 +114,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             <p className="text-[0.9375rem] text-zinc-200 whitespace-pre-wrap leading-relaxed">
               {message.content}
             </p>
-          ) : (
+          ) : visibleContent ? (
             <div className="msg-content text-[0.9375rem] text-zinc-300 leading-relaxed">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -87,10 +122,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                   code: CodeBlock as never,
                 }}
               >
-                {message.content || "..."}
+                {visibleContent}
               </ReactMarkdown>
             </div>
-          )}
+          ) : !allThinking && !(message.toolCalls && message.toolCalls.length > 0) ? (
+            <div className="msg-content text-[0.9375rem] text-zinc-500 italic leading-relaxed">
+              Resposta vazia
+            </div>
+          ) : null}
 
           {/* Footer: usage + actions */}
           <div className="flex items-center gap-3 mt-2 empty:mt-0">
@@ -99,7 +138,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 {message.usage.inputTokens + message.usage.outputTokens} tokens
               </span>
             )}
-            {!isUser && message.content && (
+            {!isUser && visibleContent && (
               <button
                 onClick={copyContent}
                 className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-zinc-300 p-1 rounded"

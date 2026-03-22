@@ -37,6 +37,11 @@ export function useOpenClaw() {
       store.appendThinking(runId, thinking);
     };
 
+    // Full thinking replacement (from agent events where each event has accumulated text)
+    client.onThinkingFull = (runId, fullText) => {
+      store.setThinkingFull(runId, fullText);
+    };
+
     client.onMessage = (msg: ChatMessage) => {
       const activeId = useAppStore.getState().activeSessionId;
       if (!activeId) return;
@@ -48,6 +53,10 @@ export function useOpenClaw() {
         }
         if (streaming.thinking && !msg.thinking) {
           msg.thinking = streaming.thinking;
+        }
+        // Use streamed content if final message came empty
+        if (!msg.content && streaming.content) {
+          msg.content = streaming.content;
         }
       }
 
@@ -118,6 +127,11 @@ export function useOpenClaw() {
       const newKey = client.newSession();
       store.createSession(newKey);
       activeId = newKey;
+    } else {
+      // Sync client sessionKey with the active session from store
+      // Critical: without this, after a page reload the client sends
+      // messages with a new random sessionKey while the store uses the old one
+      client.setSessionKey(activeId);
     }
 
     const userMsg: ChatMessage = {
@@ -130,8 +144,7 @@ export function useOpenClaw() {
     store.setInputValue("");
 
     try {
-      const selectedModel = useAppStore.getState().selectedModel;
-      await client.sendMessage(text, attachments, selectedModel);
+      await client.sendMessage(text, attachments);
     } catch (e) {
       console.error("[OpenClaw] Send failed:", e);
       store.addMessage(activeId, {
