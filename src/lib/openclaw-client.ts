@@ -483,7 +483,7 @@ export class OpenClawClient {
   }
 
   async listSessions(): Promise<unknown> {
-    return this.sendRequest("session.list", {});
+    return this.sendRequest("sessions.list", {});
   }
 
   async getHealth(): Promise<unknown> {
@@ -499,7 +499,7 @@ export class OpenClawClient {
   }
 
   async getStatus(): Promise<unknown> {
-    return this.sendRequest("status", {});
+    return this.sendRequest("health", {});
   }
 
   async getToolsCatalog(): Promise<unknown> {
@@ -535,15 +535,15 @@ export class OpenClawClient {
 
   // ---- Sessions ----
   async getSession(sessionKey: string): Promise<unknown> {
-    return this.sendRequest("session.get", { sessionKey });
+    return this.sendRequest("sessions.get", { sessionKey });
   }
 
   async deleteSessionRemote(sessionKey: string): Promise<unknown> {
-    return this.sendRequest("session.delete", { sessionKey });
+    return this.sendRequest("sessions.delete", { sessionKey });
   }
 
   async clearSession(sessionKey: string): Promise<unknown> {
-    return this.sendRequest("session.clear", { sessionKey });
+    return this.sendRequest("sessions.reset", { sessionKey });
   }
 
   // ---- Agents ----
@@ -569,15 +569,15 @@ export class OpenClawClient {
 
   // ---- Skills ----
   async listSkills(): Promise<unknown> {
-    return this.sendRequest("skills.list", {});
+    return this.sendRequest("skills.status", {});
   }
 
   async installSkill(skill: Record<string, unknown>): Promise<unknown> {
     return this.sendRequest("skills.install", skill);
   }
 
-  async uninstallSkill(skillId: string): Promise<unknown> {
-    return this.sendRequest("skills.uninstall", { skillId });
+  async updateSkill(skill: Record<string, unknown>): Promise<unknown> {
+    return this.sendRequest("skills.update", skill);
   }
 
   // ---- Cron ----
@@ -598,29 +598,25 @@ export class OpenClawClient {
   }
 
   // ---- TTS ----
-  async listTTSVoices(): Promise<unknown> {
-    return this.sendRequest("tts.voices", {});
+  async listTTSProviders(): Promise<unknown> {
+    return this.sendRequest("tts.providers", {});
   }
 
-  async getTTSConfig(): Promise<unknown> {
-    return this.sendRequest("tts.config", {});
+  async getTTSStatus(): Promise<unknown> {
+    return this.sendRequest("tts.status", {});
+  }
+
+  async ttsSpeak(text: string, voice?: string): Promise<unknown> {
+    return this.sendRequest("talk.speak", { text, voice });
   }
 
   // ---- Exec Approvals ----
-  async listApprovals(): Promise<unknown> {
-    return this.sendRequest("exec.approvals.list", {});
+  async getApprovals(): Promise<unknown> {
+    return this.sendRequest("exec.approvals.get", {});
   }
 
-  async pendingApprovals(): Promise<unknown> {
-    return this.sendRequest("exec.approvals.pending", {});
-  }
-
-  async approveExec(requestId: string): Promise<unknown> {
-    return this.sendRequest("exec.approvals.approve", { requestId });
-  }
-
-  async denyExec(requestId: string): Promise<unknown> {
-    return this.sendRequest("exec.approvals.deny", { requestId });
+  async resolveApproval(requestId: string, approved: boolean): Promise<unknown> {
+    return this.sendRequest("exec.approval.resolve", { requestId, approved });
   }
 
   // ---- Usage ----
@@ -638,10 +634,6 @@ export class OpenClawClient {
   }
 
   // ---- Updates ----
-  async checkUpdate(): Promise<unknown> {
-    return this.sendRequest("update.check", {});
-  }
-
   async runUpdate(): Promise<unknown> {
     return this.sendRequest("update.run", {}, 120000);
   }
@@ -652,7 +644,7 @@ export class OpenClawClient {
   }
 
   async revokeDevice(deviceId: string): Promise<unknown> {
-    return this.sendRequest("device.pair.revoke", { deviceId });
+    return this.sendRequest("device.pair.remove", { deviceId });
   }
 
   getSessionKey() { return this.sessionKey; }

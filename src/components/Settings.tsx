@@ -879,7 +879,7 @@ function AgentsSection({ clientRef }: { clientRef: React.RefObject<OpenClawClien
 // ============ Skills Section ============
 
 function SkillsSection({ clientRef }: { clientRef: React.RefObject<OpenClawClient | null> }) {
-  const { data, loading, error, refresh } = useRpc<AnyData>(clientRef, "skills.list");
+  const { data, loading, error, refresh } = useRpc<AnyData>(clientRef, "skills.status");
   const [showInstall, setShowInstall] = useState(false);
   const [newSkill, setNewSkill] = useState({ name: "", url: "", description: "" });
   const [installing, setInstalling] = useState(false);
@@ -909,7 +909,7 @@ function SkillsSection({ clientRef }: { clientRef: React.RefObject<OpenClawClien
     if (!client) return;
     if (!confirm(`Desinstalar skill ${skillId}?`)) return;
     try {
-      await client.uninstallSkill(skillId);
+      await client.updateSkill({ skillId, enabled: false });
       refresh();
     } catch (e) {
       alert(`Erro: ${e}`);
@@ -1060,7 +1060,7 @@ function DevicesSection({ clientRef }: { clientRef: React.RefObject<OpenClawClie
 // ============ Sessions Section ============
 
 function SessionsSection({ clientRef }: { clientRef: React.RefObject<OpenClawClient | null> }) {
-  const { data, loading, error, refresh } = useRpc<AnyData>(clientRef, "session.list");
+  const { data, loading, error, refresh } = useRpc<AnyData>(clientRef, "sessions.list");
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (loading) return <LoadingSpinner />;
@@ -1249,8 +1249,8 @@ function CronSection({ clientRef }: { clientRef: React.RefObject<OpenClawClient 
 // ============ TTS Section ============
 
 function TTSSection({ clientRef }: { clientRef: React.RefObject<OpenClawClient | null> }) {
-  const { data: voicesData, loading: vLoading, error: vError, refresh: vRefresh } = useRpc<AnyData>(clientRef, "tts.voices");
-  const { data: configData, loading: cLoading, error: cError, refresh: cRefresh } = useRpc<AnyData>(clientRef, "tts.config");
+  const { data: voicesData, loading: vLoading, error: vError, refresh: vRefresh } = useRpc<AnyData>(clientRef, "tts.providers");
+  const { data: configData, loading: cLoading, error: cError, refresh: cRefresh } = useRpc<AnyData>(clientRef, "tts.status");
   const [testText, setTestText] = useState("Olá, eu sou o LomboClaw!");
   const [testing, setTesting] = useState(false);
 
@@ -1263,7 +1263,7 @@ function TTSSection({ clientRef }: { clientRef: React.RefObject<OpenClawClient |
     if (!client || !testText) return;
     setTesting(true);
     try {
-      await client.rpc("tts.speak", { text: testText, voice: voiceId });
+      await client.ttsSpeak(testText, voiceId);
     } catch (e) {
       alert(`Erro TTS: ${e}`);
     } finally {
@@ -1342,7 +1342,7 @@ function TTSSection({ clientRef }: { clientRef: React.RefObject<OpenClawClient |
 // ============ Approvals Section ============
 
 function ApprovalsSection({ clientRef }: { clientRef: React.RefObject<OpenClawClient | null> }) {
-  const { data, loading, error, refresh } = useRpc<AnyData>(clientRef, "exec.approvals.pending");
+  const { data, loading, error, refresh } = useRpc<AnyData>(clientRef, "exec.approvals.get");
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorBox message={error} onRetry={refresh} />;
@@ -1353,11 +1353,7 @@ function ApprovalsSection({ clientRef }: { clientRef: React.RefObject<OpenClawCl
     const client = clientRef.current;
     if (!client) return;
     try {
-      if (action === "approve") {
-        await client.approveExec(requestId);
-      } else {
-        await client.denyExec(requestId);
-      }
+      await client.resolveApproval(requestId, action === "approve");
       refresh();
     } catch (e) {
       alert(`Erro: ${e}`);
@@ -1437,7 +1433,7 @@ function SystemSection({ clientRef }: { clientRef: React.RefObject<OpenClawClien
 
 function HealthSubSection({ clientRef }: { clientRef: React.RefObject<OpenClawClient | null> }) {
   const { data: health, loading: hLoading, error: hError, refresh: hRefresh } = useRpc<AnyData>(clientRef, "health");
-  const { data: status, loading: sLoading, error: sError, refresh: sRefresh } = useRpc<AnyData>(clientRef, "status");
+  const { data: status, loading: sLoading, error: sError, refresh: sRefresh } = useRpc<AnyData>(clientRef, "health");
 
   const loading = hLoading || sLoading;
   const error = hError || sError;
@@ -1528,7 +1524,7 @@ function LogsSubSection({ clientRef }: { clientRef: React.RefObject<OpenClawClie
 }
 
 function UpdateSubSection({ clientRef }: { clientRef: React.RefObject<OpenClawClient | null> }) {
-  const { data, loading, error, refresh } = useRpc<AnyData>(clientRef, "update.check");
+  const { data, loading, error, refresh } = useRpc<AnyData>(clientRef, "health");
   const [updating, setUpdating] = useState(false);
   const [updateResult, setUpdateResult] = useState<string | null>(null);
 
