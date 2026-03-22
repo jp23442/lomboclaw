@@ -2,15 +2,21 @@
 
 import { Sidebar } from "@/components/Sidebar";
 import { ChatArea } from "@/components/ChatArea";
+import { LoginScreen } from "@/components/LoginScreen";
 import { useOpenClaw } from "@/hooks/useOpenClaw";
 import { useGatewayInfo } from "@/hooks/useGatewayInfo";
 import { useAppStore } from "@/lib/store";
 import { Attachment } from "@/components/ChatInput";
 
 export default function Home() {
+  const isLoggedIn = useAppStore((s) => s.auth.isLoggedIn);
   const { sendMessage: rawSend, abortRun, newChat, clientRef } = useOpenClaw();
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const gateway = useGatewayInfo(clientRef);
+
+  if (!isLoggedIn) {
+    return <LoginScreen />;
+  }
 
   const sendMessage = (text: string, attachments?: Attachment[]) => {
     const mapped = attachments?.map((a) => ({

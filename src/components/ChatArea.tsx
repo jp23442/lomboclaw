@@ -78,9 +78,6 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
               <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
             </svg>
           </button>
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500 text-[9px] font-bold text-black ml-1" title="Perfil">
-            JP
-          </div>
         </div>
       </header>
 

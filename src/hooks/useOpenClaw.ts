@@ -4,7 +4,8 @@ import { useEffect, useRef, useCallback } from "react";
 import { OpenClawClient, ChatMessage } from "@/lib/openclaw-client";
 import { useAppStore } from "@/lib/store";
 
-function getGatewayUrl(): string {
+function getGatewayUrl(storedUrl?: string): string {
+  if (storedUrl) return storedUrl;
   const envUrl = process.env.NEXT_PUBLIC_OPENCLAW_URL;
   if (envUrl) return envUrl;
   if (typeof window === "undefined") return "ws://localhost:18789";
@@ -13,16 +14,24 @@ function getGatewayUrl(): string {
   return `${proto}//${host}:18789`;
 }
 
-const GATEWAY_PASSWORD = process.env.NEXT_PUBLIC_OPENCLAW_PASSWORD || "";
-
 export function useOpenClaw() {
   const clientRef = useRef<OpenClawClient | null>(null);
   const store = useAppStore();
+  const auth = useAppStore((s) => s.auth);
 
   useEffect(() => {
+    if (!auth.isLoggedIn) {
+      // Not logged in — disconnect any existing client
+      if (clientRef.current) {
+        clientRef.current.disconnect();
+        clientRef.current = null;
+      }
+      return;
+    }
+
     const client = new OpenClawClient({
-      url: getGatewayUrl(),
-      password: GATEWAY_PASSWORD,
+      url: getGatewayUrl(auth.gatewayUrl),
+      password: auth.password,
     });
 
     client.onStateChange = (state) => {
@@ -80,7 +89,7 @@ export function useOpenClaw() {
       clientRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [auth.isLoggedIn, auth.gatewayUrl, auth.password]);
 
   const sendMessage = useCallback(async (text: string, attachments?: { type: string; mimeType: string; content: string }[]) => {
     const client = clientRef.current;

@@ -35,7 +35,7 @@ function timeAgo(timestamp: number): string {
 type SidebarMode = "main" | "models" | "devices";
 
 export function Sidebar({ onNewChat, models, devices, health, onRefresh }: SidebarProps) {
-  const { sessions, activeSessionId, setActiveSession, deleteSession, toggleSidebar, connectionState } = useAppStore();
+  const { sessions, activeSessionId, setActiveSession, deleteSession, toggleSidebar, connectionState, logout, auth } = useAppStore();
   const [search, setBuscar] = useState("");
   const [mode, setMode] = useState<SidebarMode>("main");
 
@@ -228,12 +228,23 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
       )}
 
       <div className="border-t border-zinc-800/60 px-2.5 py-2">
-        <div className="flex items-center gap-2 rounded-md px-2 py-1.5">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500 text-[9px] font-bold text-black">JP</div>
-          <div className="min-w-0">
-            <div className="truncate text-[12px] text-zinc-200">João</div>
-            <div className="text-[9px] text-zinc-600">sessão local</div>
+        <div className="flex items-center justify-between rounded-md px-2 py-1">
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-mono text-[10px] text-zinc-500" title={auth.gatewayUrl}>
+              {auth.gatewayUrl.replace(/^wss?:\/\//, "")}
+            </div>
           </div>
+          <button
+            onClick={logout}
+            className="shrink-0 rounded-md p-1 text-zinc-600 transition hover:bg-zinc-800 hover:text-red-400"
+            title="Desconectar"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
         </div>
       </div>
     </aside>

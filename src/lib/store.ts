@@ -16,7 +16,18 @@ interface StreamingState {
   toolCalls: ToolCall[];
 }
 
+interface AuthState {
+  gatewayUrl: string;
+  password: string;
+  isLoggedIn: boolean;
+}
+
 interface AppState {
+  // Auth
+  auth: AuthState;
+  login: (url: string, password: string) => void;
+  logout: () => void;
+
   // Connection
   connectionState: "connecting" | "connected" | "disconnected" | "error";
   setConnectionState: (state: AppState["connectionState"]) => void;
@@ -55,6 +66,30 @@ interface AppState {
 
 // ---- localStorage persistence ----
 const STORAGE_KEY = "openclaw-sessions";
+const AUTH_KEY = "openclaw-auth";
+
+function loadAuth(): AuthState {
+  try {
+    const raw = localStorage.getItem(AUTH_KEY);
+    if (!raw) return { gatewayUrl: "", password: "", isLoggedIn: false };
+    const data = JSON.parse(raw);
+    return {
+      gatewayUrl: data.gatewayUrl || "",
+      password: data.password || "",
+      isLoggedIn: !!data.isLoggedIn,
+    };
+  } catch {
+    return { gatewayUrl: "", password: "", isLoggedIn: false };
+  }
+}
+
+function saveAuth(auth: AuthState) {
+  try {
+    localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+  } catch {
+    // quota exceeded or SSR - ignore
+  }
+}
 
 function loadSessions(): { sessions: ChatSession[]; activeSessionId: string | null; selectedModel: string | null } {
   try {
@@ -88,6 +123,19 @@ function persistAfterSet(get: () => AppState) {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
+  // Auth
+  auth: { gatewayUrl: "", password: "", isLoggedIn: false },
+  login: (url, password) => {
+    const auth = { gatewayUrl: url, password, isLoggedIn: true };
+    set({ auth });
+    saveAuth(auth);
+  },
+  logout: () => {
+    const auth = { gatewayUrl: "", password: "", isLoggedIn: false };
+    set({ auth, connectionState: "disconnected" });
+    saveAuth(auth);
+  },
+
   // Connection
   connectionState: "disconnected",
   setConnectionState: (connectionState) => set({ connectionState }),
@@ -246,7 +294,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 // Hydrate from localStorage after mount (avoids SSR mismatch)
 if (typeof window !== "undefined") {
   const saved = loadSessions();
-  if (saved.sessions.length > 0) {
-    useAppStore.setState(saved);
-  }
+  const auth = loadAuth();
+  useAppStore.setState({
+    ...saved,
+    auth,
+  });
 }
