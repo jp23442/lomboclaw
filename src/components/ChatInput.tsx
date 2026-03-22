@@ -114,16 +114,16 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
   );
 
   return (
-    <div className="w-full px-4 pb-5 pt-3">
-      <div className="mx-auto max-w-[920px]">
+    <div className="w-full px-3 md:px-6 pb-4 md:pb-8 pt-3 md:pt-5">
+      <div className="mx-auto max-w-[960px]">
         {attachments.length > 0 && (
-          <div className="mb-3 flex flex-wrap gap-2 px-1">
+          <div className="mb-3 md:mb-5 flex flex-wrap gap-2 md:gap-3 px-1">
             {attachments.map((att, i) => (
-              <div key={i} className="group/att relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 p-1">
-                <img src={att.preview} alt={att.name} className="h-16 w-16 rounded-xl object-cover" />
+              <div key={i} className="group/att relative overflow-hidden rounded-xl md:rounded-2xl border border-white/[0.06] bg-white/[0.02] p-1 md:p-1.5 backdrop-blur-sm transition-all duration-200 hover:border-white/[0.1] hover:bg-white/[0.04]">
+                <img src={att.preview} alt={att.name} className="h-14 w-14 md:h-18 md:w-18 rounded-lg md:rounded-xl object-cover" />
                 <button
                   onClick={() => removeAttachment(i)}
-                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition group-hover/att:opacity-100"
+                  className="absolute right-1 top-1 md:right-1.5 md:top-1.5 flex h-6 w-6 md:h-7 md:w-7 items-center justify-center rounded-full bg-black/80 text-white opacity-100 md:opacity-0 transition-all duration-200 hover:bg-red-500 group-hover/att:opacity-100 backdrop-blur-sm"
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                     <path d="M18 6L6 18M6 6l12 12" />
@@ -135,8 +135,10 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
         )}
 
         <div
-          className={`rounded-[26px] border bg-[#1f1f20] px-5 py-4 shadow-[0_8px_30px_rgba(0,0,0,0.22)] transition-colors ${
-            dragOver ? "border-emerald-500/50 bg-emerald-950/10" : "border-[#323234] focus-within:border-[#454547]"
+          className={`rounded-2xl md:rounded-[28px] border backdrop-blur-sm px-4 py-4 md:px-7 md:py-6 transition-all duration-300 ${
+            dragOver 
+              ? "border-emerald-500/40 bg-emerald-500/5 shadow-[0_0_40px_rgba(16,185,129,0.15)]" 
+              : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.03] focus-within:border-white/[0.1] focus-within:bg-white/[0.03] shadow-[0_8px_40px_rgba(0,0,0,0.3)]"
           }`}
           onDrop={(e) => {
             e.preventDefault();
@@ -158,11 +160,11 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
             placeholder={isConnected ? "Como posso ajudar?" : "Desconectado..."}
             disabled={!isConnected}
             rows={1}
-            className="max-h-[180px] min-h-[40px] w-full resize-none bg-transparent p-0 text-[16px] leading-relaxed text-zinc-100 outline-none placeholder:text-zinc-500 disabled:opacity-50"
+            className="max-h-[160px] md:max-h-[200px] min-h-[40px] md:min-h-[48px] w-full resize-none bg-transparent p-0 text-[15px] md:text-[16px] leading-relaxed text-zinc-100 outline-none placeholder:text-zinc-500/70 disabled:opacity-40 transition-opacity"
           />
 
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+          <div className="mt-3 md:mt-5 flex items-center justify-between gap-2 md:gap-3">
+            <div className="flex items-center gap-0.5 md:gap-1">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -177,33 +179,33 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!isConnected}
-                className="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-30"
+                className="rounded-lg md:rounded-xl p-2 md:p-2.5 text-zinc-500 transition-all duration-200 hover:bg-white/[0.06] hover:text-zinc-200 disabled:opacity-30 active:scale-95"
                 title="Anexar imagem"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="md:w-5 md:h-5">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
               </button>
               <button
                 type="button"
                 disabled
-                className="rounded-full p-2 text-zinc-500 opacity-70"
+                className="hidden md:block rounded-xl p-2.5 text-zinc-600 opacity-50"
                 title="Ferramentas extras em breve"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z" />
                 </svg>
               </button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-1.5">
               <button
                 type="button"
                 disabled
-                className="rounded-full p-2 text-zinc-400"
+                className="hidden md:block rounded-xl p-2.5 text-zinc-600 opacity-50"
                 title="Microfone em breve"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M12 15a3 3 0 003-3V7a3 3 0 10-6 0v5a3 3 0 003 3Z" />
                   <path d="M19 11a7 7 0 01-14 0M12 18v3" />
                 </svg>
@@ -212,10 +214,10 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
               {isStreaming ? (
                 <button
                   onClick={onAbort}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-700 text-zinc-200 transition hover:bg-zinc-600"
+                  className="flex h-10 w-10 md:h-11 md:w-11 items-center justify-center rounded-lg md:rounded-xl bg-zinc-700 text-zinc-200 transition-all duration-200 hover:bg-zinc-600 active:scale-95 shadow-lg"
                   title="Parar"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                     <rect x="6" y="6" width="12" height="12" rx="2" />
                   </svg>
                 </button>
@@ -223,11 +225,11 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
                 <button
                   onClick={handleSubmit}
                   disabled={(!inputValue.trim() && attachments.length === 0) || !isConnected}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black transition hover:bg-zinc-200 disabled:opacity-20 disabled:hover:bg-white"
+                  className="flex h-10 w-10 md:h-11 md:w-11 items-center justify-center rounded-lg md:rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-500 text-black transition-all duration-200 hover:from-emerald-300 hover:to-emerald-400 active:scale-95 disabled:opacity-20 shadow-lg shadow-emerald-500/25"
                   title="Enviar"
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-                    <path d="M12 5v14M5 12h14" />
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="md:w-[18px] md:h-[18px]">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
                   </svg>
                 </button>
               )}
