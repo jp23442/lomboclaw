@@ -22,7 +22,7 @@ export default function Home() {
   };
 
   return (
-    <main className="flex h-screen w-screen overflow-hidden bg-[#171717] text-zinc-100 safe-top safe-bottom">
+    <main className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-[#0a0a0b] via-[#0d0d0f] to-[#0a0a0b] text-zinc-100 safe-top safe-bottom">
       {sidebarOpen && (
         <Sidebar
           onNewChat={newChat}
