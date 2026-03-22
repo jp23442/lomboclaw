@@ -338,95 +338,374 @@ function useRpc<T>(
   return { data, loading, error, refresh: fetch };
 }
 
+// ============ Section descriptions from schema ============
+
+const SECTION_META: Record<string, { label: string; description: string }> = {
+  env: { label: "Ambiente", description: "Variáveis de ambiente e paths do sistema" },
+  wizard: { label: "Wizard", description: "Assistente de configuração inicial" },
+  diagnostics: { label: "Diagnósticos", description: "Telemetria, crash reports e métricas" },
+  logging: { label: "Logging", description: "Nível de log, rotação e destino" },
+  cli: { label: "CLI", description: "Configurações da interface de linha de comando" },
+  update: { label: "Atualizações", description: "Auto-update, canal e frequência" },
+  browser: { label: "Navegador", description: "Configuração do browser embutido" },
+  ui: { label: "Interface", description: "Tema, layout e preferências visuais" },
+  secrets: { label: "Segredos", description: "API keys e credenciais (valores ocultos)" },
+  auth: { label: "Autenticação", description: "Login, tokens e permissões" },
+  acp: { label: "ACP", description: "Agent Control Protocol" },
+  models: { label: "Modelos", description: "Modelos de IA, providers e routing" },
+  nodehost: { label: "Node Host", description: "Configuração do host Node.js" },
+  agents: { label: "Agentes", description: "Definições e comportamento dos agentes" },
+  tools: { label: "Ferramentas", description: "Ferramentas disponíveis e catálogo" },
+  bindings: { label: "Bindings", description: "Atalhos de teclado e mapeamentos" },
+  broadcast: { label: "Broadcast", description: "Notificações e mensagens broadcast" },
+  audio: { label: "Áudio", description: "Entrada/saída de áudio e dispositivos" },
+  media: { label: "Mídia", description: "Processamento de imagens, vídeo e arquivos" },
+  messages: { label: "Mensagens", description: "Formato, limites e histórico de mensagens" },
+  commands: { label: "Comandos", description: "Comandos slash e ações disponíveis" },
+  approvals: { label: "Aprovações", description: "Políticas de aprovação de comandos" },
+  session: { label: "Sessão", description: "Gerenciamento de sessões e persistência" },
+  cron: { label: "Cron", description: "Tarefas agendadas e timers" },
+  hooks: { label: "Hooks", description: "Hooks de eventos e callbacks" },
+  web: { label: "Web", description: "Servidor web embutido e API HTTP" },
+  channels: { label: "Canais", description: "Canais de comunicação (Discord, Slack, etc)" },
+  discovery: { label: "Discovery", description: "Descoberta de rede e mDNS" },
+  canvashost: { label: "Canvas Host", description: "Host de canvas e renderização" },
+  talk: { label: "Talk", description: "Conversação por voz e wake words" },
+  gateway: { label: "Gateway", description: "Configuração do gateway HTTP/WebSocket" },
+  memory: { label: "Memória", description: "Sistema de memória e recall do agente" },
+  mcp: { label: "MCP", description: "Model Context Protocol servers" },
+  skills: { label: "Skills", description: "Skills instaláveis e marketplace" },
+  plugins: { label: "Plugins", description: "Sistema de plugins e extensões" },
+  meta: { label: "Meta", description: "Metadados da configuração" },
+};
+
 // ============ Dynamic Form Field ============
 
-function ConfigField({ path, value, schema, onChange }: {
+function FieldLabel({ label, help, path }: { label: string; help?: string; path?: string }) {
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <div className="text-[13px] text-zinc-200">{label}</div>
+        {path && <span className="font-mono text-[9px] text-zinc-600">{path}</span>}
+      </div>
+      {help && <div className="mt-0.5 text-[11px] text-zinc-500 leading-snug">{help}</div>}
+    </div>
+  );
+}
+
+function ConfigField({ path, value, schema, onChange, depth = 0 }: {
   path: string;
   value: unknown;
   schema: AnyData;
   onChange: (path: string, value: unknown) => void;
+  depth?: number;
 }) {
   const label = schema?.label || schema?.title || path.split(".").pop() || path;
   const help = schema?.help || schema?.description || "";
   const type = schema?.type || typeof value;
+  const isSecret = /secret|password|key|token|apikey/i.test(path) || schema?.format === "password";
 
+  // Enum / select dropdown
+  if (schema?.enum && Array.isArray(schema.enum)) {
+    return (
+      <div className="rounded-xl bg-zinc-900/50 px-3 py-2.5">
+        <FieldLabel label={label} help={help} />
+        <select
+          value={String(value ?? "")}
+          onChange={(e) => {
+            const v = e.target.value;
+            // Try to preserve type
+            if (schema.type === "number" || schema.type === "integer") onChange(path, Number(v));
+            else if (v === "true") onChange(path, true);
+            else if (v === "false") onChange(path, false);
+            else onChange(path, v);
+          }}
+          className="mt-1.5 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-[13px] text-zinc-200 outline-none focus:border-zinc-700"
+        >
+          {schema.enum.map((opt: unknown) => (
+            <option key={String(opt)} value={String(opt)}>{String(opt)}</option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+
+  // Boolean toggle
   if (type === "boolean" || typeof value === "boolean") {
     return (
-      <label className="flex items-center justify-between gap-3 rounded-xl bg-zinc-900/50 px-4 py-3">
-        <div>
-          <div className="text-sm text-zinc-200">{label}</div>
-          {help && <div className="mt-0.5 text-[11px] text-zinc-500">{help}</div>}
-        </div>
+      <label className="flex items-center justify-between gap-3 rounded-xl bg-zinc-900/50 px-3 py-2.5 cursor-pointer">
+        <FieldLabel label={label} help={help} />
         <button
           onClick={() => onChange(path, !value)}
-          className={`relative h-6 w-11 rounded-full transition ${value ? "bg-emerald-500" : "bg-zinc-700"}`}
+          className={`relative h-5 w-9 shrink-0 rounded-full transition ${value ? "bg-emerald-500" : "bg-zinc-700"}`}
         >
-          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${value ? "left-[22px]" : "left-0.5"}`} />
+          <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition ${value ? "left-[18px]" : "left-0.5"}`} />
         </button>
       </label>
     );
   }
 
+  // Number with min/max/step
   if (type === "number" || type === "integer" || typeof value === "number") {
     return (
-      <div className="rounded-xl bg-zinc-900/50 px-4 py-3">
-        <div className="text-sm text-zinc-200">{label}</div>
-        {help && <div className="mt-0.5 text-[11px] text-zinc-500">{help}</div>}
-        <input
-          type="number"
-          value={value as number ?? 0}
-          onChange={(e) => onChange(path, Number(e.target.value))}
-          className="mt-2 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-200 outline-none focus:border-zinc-700"
-        />
-      </div>
-    );
-  }
-
-  if (type === "string" || typeof value === "string") {
-    const isLong = typeof value === "string" && value.length > 80;
-    return (
-      <div className="rounded-xl bg-zinc-900/50 px-4 py-3">
-        <div className="text-sm text-zinc-200">{label}</div>
-        {help && <div className="mt-0.5 text-[11px] text-zinc-500">{help}</div>}
-        {isLong ? (
-          <textarea
-            value={(value as string) ?? ""}
-            onChange={(e) => onChange(path, e.target.value)}
-            rows={3}
-            className="mt-2 w-full resize-y rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-200 outline-none focus:border-zinc-700"
-          />
-        ) : (
+      <div className="rounded-xl bg-zinc-900/50 px-3 py-2.5">
+        <FieldLabel label={label} help={help} />
+        <div className="mt-1.5 flex items-center gap-2">
           <input
-            type="text"
-            value={(value as string) ?? ""}
-            onChange={(e) => onChange(path, e.target.value)}
-            className="mt-2 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-200 outline-none focus:border-zinc-700"
+            type="number"
+            value={value as number ?? 0}
+            min={schema?.minimum}
+            max={schema?.maximum}
+            step={schema?.step || (type === "integer" ? 1 : undefined)}
+            onChange={(e) => onChange(path, Number(e.target.value))}
+            className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-[13px] text-zinc-200 outline-none focus:border-zinc-700"
           />
+          {(schema?.minimum !== undefined || schema?.maximum !== undefined) && (
+            <span className="shrink-0 text-[10px] text-zinc-600">
+              {schema.minimum !== undefined && `min: ${schema.minimum}`}
+              {schema.minimum !== undefined && schema.maximum !== undefined && " · "}
+              {schema.maximum !== undefined && `max: ${schema.maximum}`}
+            </span>
+          )}
+        </div>
+        {schema?.default !== undefined && (
+          <div className="mt-1 text-[10px] text-zinc-600">Padrão: {String(schema.default)}</div>
         )}
       </div>
     );
   }
 
-  if (Array.isArray(value)) {
+  // String field (with secret masking, textarea for long values, etc.)
+  if (type === "string" || typeof value === "string") {
+    const strVal = (value as string) ?? "";
+    const isLong = strVal.length > 80 || schema?.format === "textarea";
+    const isUrl = schema?.format === "uri" || schema?.format === "url";
+
     return (
-      <div className="rounded-xl bg-zinc-900/50 px-4 py-3">
-        <div className="text-sm text-zinc-200">{label}</div>
-        {help && <div className="mt-0.5 text-[11px] text-zinc-500">{help}</div>}
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {(value as unknown[]).map((item, i) => (
-            <Badge key={i}>{String(item)}</Badge>
-          ))}
-        </div>
+      <div className="rounded-xl bg-zinc-900/50 px-3 py-2.5">
+        <FieldLabel label={label} help={help} />
+        {isLong ? (
+          <textarea
+            value={strVal}
+            onChange={(e) => onChange(path, e.target.value)}
+            rows={3}
+            className="mt-1.5 w-full resize-y rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-[13px] text-zinc-200 outline-none focus:border-zinc-700"
+            placeholder={schema?.placeholder || schema?.default || ""}
+          />
+        ) : (
+          <input
+            type={isSecret ? "password" : isUrl ? "url" : "text"}
+            value={strVal}
+            onChange={(e) => onChange(path, e.target.value)}
+            placeholder={schema?.placeholder || schema?.default || ""}
+            className="mt-1.5 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-[13px] text-zinc-200 outline-none focus:border-zinc-700"
+          />
+        )}
+        {schema?.default !== undefined && !isSecret && (
+          <div className="mt-1 text-[10px] text-zinc-600">Padrão: {String(schema.default)}</div>
+        )}
       </div>
     );
   }
 
-  // Object: render as nested group
+  // Array editor (add/remove items)
+  if (Array.isArray(value)) {
+    const items = value as unknown[];
+    const itemSchema = schema?.items || {};
+    const isStringArray = items.every((v) => typeof v === "string" || typeof v === "number");
+
+    return (
+      <div className="rounded-xl bg-zinc-900/50 px-3 py-2.5">
+        <FieldLabel label={label} help={help} />
+        {isStringArray ? (
+          <div className="mt-1.5">
+            <div className="flex flex-wrap gap-1.5">
+              {items.map((item, i) => (
+                <span key={i} className="group inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2.5 py-0.5 text-[11px] text-zinc-300">
+                  {String(item)}
+                  <button
+                    onClick={() => {
+                      const next = [...items];
+                      next.splice(i, 1);
+                      onChange(path, next);
+                    }}
+                    className="hidden rounded-full text-zinc-500 hover:text-red-400 group-hover:inline"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <ArrayItemAdder
+              onAdd={(v) => onChange(path, [...items, v])}
+              placeholder={itemSchema?.type === "number" ? "Adicionar número..." : "Adicionar item..."}
+              parseAs={itemSchema?.type === "number" || itemSchema?.type === "integer" ? "number" : "string"}
+            />
+          </div>
+        ) : (
+          <div className="mt-1.5 space-y-1.5">
+            {items.map((item, i) => (
+              <div key={i} className="flex items-start gap-1.5">
+                <div className="flex-1 rounded-lg border border-zinc-800/50 bg-zinc-950 p-2">
+                  {typeof item === "object" && item !== null ? (
+                    <div className="space-y-1.5">
+                      {Object.entries(item as AnyData).map(([k, v]) => (
+                        <ConfigField
+                          key={k}
+                          path={`${path}[${i}].${k}`}
+                          value={v}
+                          schema={itemSchema?.properties?.[k] || {}}
+                          onChange={onChange}
+                          depth={depth + 1}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-[11px] text-zinc-400">{JSON.stringify(item)}</span>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    const next = [...items];
+                    next.splice(i, 1);
+                    onChange(path, next);
+                  }}
+                  className="mt-1 shrink-0 rounded p-0.5 text-zinc-600 hover:text-red-400"
+                  title="Remover"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Nested object: render sub-fields recursively (up to depth 3)
   if (typeof value === "object" && value !== null) {
-    return null; // Handled at group level
+    if (depth >= 3) {
+      return (
+        <div className="rounded-xl bg-zinc-900/50 px-3 py-2.5">
+          <FieldLabel label={label} help={help} />
+          <JsonViewer data={value} maxHeight="150px" />
+        </div>
+      );
+    }
+
+    return (
+      <NestedObjectField
+        path={path}
+        label={label}
+        help={help}
+        value={value as AnyData}
+        schema={schema}
+        onChange={onChange}
+        depth={depth}
+      />
+    );
+  }
+
+  // Null / undefined — show as disabled text
+  if (value === null || value === undefined) {
+    return (
+      <div className="rounded-xl bg-zinc-900/50 px-3 py-2.5">
+        <FieldLabel label={label} help={help} />
+        <div className="mt-1 text-[11px] italic text-zinc-600">{value === null ? "null" : "não definido"}</div>
+      </div>
+    );
   }
 
   return null;
+}
+
+// Inline add item for string/number arrays
+function ArrayItemAdder({ onAdd, placeholder, parseAs }: {
+  onAdd: (value: unknown) => void;
+  placeholder: string;
+  parseAs: "string" | "number";
+}) {
+  const [val, setVal] = useState("");
+
+  const submit = () => {
+    if (!val.trim()) return;
+    onAdd(parseAs === "number" ? Number(val) : val.trim());
+    setVal("");
+  };
+
+  return (
+    <div className="mt-1.5 flex gap-1.5">
+      <input
+        type={parseAs === "number" ? "number" : "text"}
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+        placeholder={placeholder}
+        className="flex-1 rounded-lg border border-zinc-800 bg-zinc-950 px-2.5 py-1 text-[11px] text-zinc-300 outline-none focus:border-zinc-700"
+      />
+      <button onClick={submit} className="rounded-lg bg-zinc-800 px-2 py-1 text-[10px] text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200">
+        +
+      </button>
+    </div>
+  );
+}
+
+// Nested object field with collapsible sub-fields
+function NestedObjectField({ path, label, help, value, schema, onChange, depth }: {
+  path: string;
+  label: string;
+  help: string;
+  value: AnyData;
+  schema: AnyData;
+  onChange: (path: string, value: unknown) => void;
+  depth: number;
+}) {
+  const [open, setOpen] = useState(depth < 1);
+  const entries = Object.entries(value);
+
+  return (
+    <div className={`rounded-xl ${depth === 0 ? "border border-zinc-800/50 bg-zinc-900/30" : "bg-zinc-900/50"} overflow-hidden`}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center justify-between px-3 py-2 text-left"
+      >
+        <div>
+          <div className="text-[13px] font-medium text-zinc-300">{label}</div>
+          {help && !open && <div className="text-[10px] text-zinc-600 truncate max-w-[400px]">{help}</div>}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-zinc-600">{entries.length} campos</span>
+          <svg
+            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+            className={`text-zinc-500 transition ${open ? "rotate-180" : ""}`}
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-zinc-800/50 px-2 pb-2 pt-1.5 space-y-1.5">
+          {entries.map(([key, val]) => {
+            const subSchema = schema?.properties?.[key] || {};
+            return (
+              <ConfigField
+                key={key}
+                path={`${path}.${key}`}
+                value={val}
+                schema={subSchema}
+                onChange={onChange}
+                depth={depth + 1}
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ============ Config Section ============
@@ -440,7 +719,8 @@ function ConfigSection({ clientRef }: { clientRef: React.RefObject<OpenClawClien
   const [saveError, setSaveError] = useState<string | null>(null);
   const [localConfig, setLocalConfig] = useState<AnyData | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(["general"]));
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [searchFilter, setSearchFilter] = useState("");
 
   const config = data?.config as AnyData;
   const hash = data?.hash as string;
@@ -451,16 +731,19 @@ function ConfigSection({ clientRef }: { clientRef: React.RefObject<OpenClawClien
     if (config && !localConfig) setLocalConfig(structuredClone(config));
   }, [config, localConfig]);
 
+  // Parse path supporting array notation like "foo.bar[0].baz"
   const handleFieldChange = (path: string, value: unknown) => {
     if (!localConfig) return;
     const updated = structuredClone(localConfig);
-    const keys = path.split(".");
+    // Split on dots and brackets: "a.b[0].c" -> ["a", "b", "0", "c"]
+    const keys = path.replace(/\[(\d+)\]/g, ".$1").split(".");
     let obj: AnyData = updated;
     for (let i = 0; i < keys.length - 1; i++) {
-      if (obj[keys[i]] === undefined || typeof obj[keys[i]] !== "object") {
-        obj[keys[i]] = {};
+      const k = keys[i];
+      if (obj[k] === undefined || typeof obj[k] !== "object") {
+        obj[k] = /^\d+$/.test(keys[i + 1]) ? [] : {};
       }
-      obj = obj[keys[i]] as AnyData;
+      obj = obj[k] as AnyData;
     }
     obj[keys[keys.length - 1]] = value;
     setLocalConfig(updated);
@@ -498,26 +781,36 @@ function ConfigSection({ clientRef }: { clientRef: React.RefObject<OpenClawClien
   if (error) return <ErrorBox message={error} onRetry={refresh} />;
 
   const cfgToRender = localConfig || config;
+  const allGroups = cfgToRender ? Object.keys(cfgToRender) : [];
 
-  // Build groups from config keys
-  const groups = cfgToRender ? Object.keys(cfgToRender) : [];
+  // Filter groups by search
+  const groups = searchFilter
+    ? allGroups.filter((k) => {
+        const meta = SECTION_META[k];
+        const label = meta?.label || k;
+        const desc = meta?.description || "";
+        const term = searchFilter.toLowerCase();
+        return k.toLowerCase().includes(term) || label.toLowerCase().includes(term) || desc.toLowerCase().includes(term);
+      })
+    : allGroups;
 
   return (
     <div>
       <SectionHeader title="Configuração" subtitle="Configuração completa do gateway OpenClaw" />
 
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <Badge color="zinc">hash: {hash?.slice(0, 12)}...</Badge>
+        <Badge color="zinc">{allGroups.length} seções</Badge>
         <div className="flex rounded-lg border border-zinc-800">
           <button
             onClick={() => setMode("visual")}
-            className={`px-3 py-1.5 text-xs transition ${mode === "visual" ? "bg-zinc-800 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"}`}
+            className={`px-2.5 py-1 text-[11px] transition ${mode === "visual" ? "bg-zinc-800 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"}`}
           >
             Visual
           </button>
           <button
             onClick={() => { setMode("json"); setEditValue(JSON.stringify(cfgToRender, null, 2)); }}
-            className={`px-3 py-1.5 text-xs transition ${mode === "json" ? "bg-zinc-800 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"}`}
+            className={`px-2.5 py-1 text-[11px] transition ${mode === "json" ? "bg-zinc-800 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"}`}
           >
             JSON
           </button>
@@ -530,14 +823,26 @@ function ConfigSection({ clientRef }: { clientRef: React.RefObject<OpenClawClien
         )}
       </div>
 
-      {saveError && <p className="mb-3 text-sm text-red-400">{saveError}</p>}
+      {mode === "visual" && (
+        <div className="mb-3">
+          <input
+            type="text"
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            placeholder="Filtrar seções..."
+            className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-zinc-700"
+          />
+        </div>
+      )}
+
+      {saveError && <p className="mb-3 text-[12px] text-red-400">{saveError}</p>}
 
       {mode === "json" ? (
         <div>
           <textarea
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
-            className="h-[50vh] w-full rounded-xl border border-zinc-800 bg-zinc-950 p-4 font-mono text-[12px] leading-relaxed text-zinc-200 outline-none focus:border-zinc-700"
+            className="h-[50vh] w-full rounded-xl border border-zinc-800 bg-zinc-950 p-4 font-mono text-[11px] leading-relaxed text-zinc-200 outline-none focus:border-zinc-700"
             spellCheck={false}
           />
           <div className="mt-3 flex gap-2">
@@ -547,66 +852,54 @@ function ConfigSection({ clientRef }: { clientRef: React.RefObject<OpenClawClien
           </div>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
+          {groups.length === 0 && searchFilter && (
+            <EmptyState text={`Nenhuma seção encontrada para "${searchFilter}"`} />
+          )}
           {groups.map((groupKey) => {
             const groupValue = cfgToRender[groupKey];
             const isOpen = expandedGroups.has(groupKey);
             const groupSchema = schema?.properties?.[groupKey] || schema?.[groupKey] || {};
-            const groupLabel = groupSchema?.label || groupSchema?.title || groupKey;
+            const meta = SECTION_META[groupKey];
+            const groupLabel = meta?.label || groupSchema?.label || groupSchema?.title || groupKey;
+            const groupDesc = meta?.description || groupSchema?.description || "";
+            const fieldCount = typeof groupValue === "object" && groupValue !== null && !Array.isArray(groupValue)
+              ? Object.keys(groupValue).length
+              : 1;
 
             return (
-              <div key={groupKey} className="rounded-2xl border border-zinc-800 bg-zinc-900/30">
+              <div key={groupKey} className="rounded-xl border border-zinc-800 bg-zinc-900/30">
                 <button
                   onClick={() => toggleGroup(groupKey)}
-                  className="flex w-full items-center justify-between px-4 py-3 text-left"
+                  className="flex w-full items-center justify-between px-3 py-2.5 text-left"
                 >
-                  <div className="text-sm font-medium text-zinc-200">{groupLabel}</div>
-                  <svg
-                    width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                    className={`text-zinc-500 transition ${isOpen ? "rotate-180" : ""}`}
-                  >
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="text-[13px] font-medium text-zinc-200">{groupLabel}</div>
+                      <span className="font-mono text-[9px] text-zinc-600">{groupKey}</span>
+                    </div>
+                    {groupDesc && !isOpen && (
+                      <div className="mt-0.5 truncate text-[11px] text-zinc-500">{groupDesc}</div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-zinc-600">{fieldCount}</span>
+                    <svg
+                      width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                      className={`text-zinc-500 transition ${isOpen ? "rotate-180" : ""}`}
+                    >
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </div>
                 </button>
 
                 {isOpen && (
-                  <div className="border-t border-zinc-800 px-3 pb-3 pt-2">
+                  <div className="border-t border-zinc-800 px-2.5 pb-2.5 pt-2">
                     {typeof groupValue === "object" && groupValue !== null && !Array.isArray(groupValue) ? (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         {Object.entries(groupValue as AnyData).map(([key, val]) => {
                           const fieldSchema = groupSchema?.properties?.[key] || {};
                           const fieldPath = `${groupKey}.${key}`;
-
-                          if (typeof val === "object" && val !== null && !Array.isArray(val)) {
-                            // Nested object: render sub-fields
-                            return (
-                              <div key={key} className="rounded-xl border border-zinc-800/50 p-3">
-                                <div className="mb-2 text-xs font-medium text-zinc-400">{fieldSchema?.label || fieldSchema?.title || key}</div>
-                                <div className="space-y-2">
-                                  {Object.entries(val as AnyData).map(([subKey, subVal]) => {
-                                    if (typeof subVal === "object" && subVal !== null && !Array.isArray(subVal)) {
-                                      return (
-                                        <div key={subKey} className="rounded-lg bg-zinc-900/50 px-4 py-3">
-                                          <div className="text-sm text-zinc-200">{subKey}</div>
-                                          <JsonViewer data={subVal} maxHeight="150px" />
-                                        </div>
-                                      );
-                                    }
-                                    const subSchema = fieldSchema?.properties?.[subKey] || {};
-                                    return (
-                                      <ConfigField
-                                        key={subKey}
-                                        path={`${fieldPath}.${subKey}`}
-                                        value={subVal}
-                                        schema={subSchema}
-                                        onChange={handleFieldChange}
-                                      />
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            );
-                          }
 
                           return (
                             <ConfigField
@@ -615,6 +908,7 @@ function ConfigSection({ clientRef }: { clientRef: React.RefObject<OpenClawClien
                               value={val}
                               schema={fieldSchema}
                               onChange={handleFieldChange}
+                              depth={0}
                             />
                           );
                         })}
@@ -625,6 +919,7 @@ function ConfigSection({ clientRef }: { clientRef: React.RefObject<OpenClawClien
                         value={groupValue}
                         schema={groupSchema}
                         onChange={handleFieldChange}
+                        depth={0}
                       />
                     )}
                   </div>
