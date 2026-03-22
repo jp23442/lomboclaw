@@ -45,46 +45,46 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
   }[connectionState];
 
   return (
-    <div className="flex h-full flex-1 flex-col bg-gradient-to-b from-[#0f0f11] to-[#0c0c0e] text-zinc-100">
-      <header className="flex h-16 items-center justify-between border-b border-white/[0.04] px-6 shrink-0 backdrop-blur-sm bg-black/20">
-        <div className="flex items-center gap-4">
-          {!sidebarOpen && (
+    <div className="flex h-full flex-1 flex-col bg-gradient-to-b from-[#0f0f11] to-[#0c0c0e] text-zinc-100 relative">
+      {/* Floating header */}
+      <div className="absolute top-0 left-0 right-0 z-40 pointer-events-none">
+        <div className="flex h-16 items-center justify-between px-6 pointer-events-auto">
+          <div className="flex items-center gap-4">
+            {!sidebarOpen && (
+              <button
+                onClick={toggleSidebar}
+                className="rounded-xl p-2.5 text-zinc-500 transition-all duration-200 hover:bg-white/[0.04] hover:text-zinc-200 hover:scale-105 active:scale-95"
+                title="Abrir sidebar"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <rect x="4" y="4" width="16" height="16" rx="3" />
+                  <path d="M10 4v16" />
+                </svg>
+              </button>
+            )}
+            <ModelSelector models={models} clientRef={clientRef} />
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button className="rounded-xl p-2.5 text-zinc-500 transition-all duration-200 hover:bg-white/[0.04] hover:text-zinc-200" title="Status">
+              <span className={`block h-2.5 w-2.5 rounded-full ${statusDot} ring-2 ring-black/50`} />
+            </button>
             <button
-              onClick={toggleSidebar}
-              className="rounded-xl p-2.5 text-zinc-500 transition-all duration-200 hover:bg-white/[0.04] hover:text-zinc-200 hover:scale-105 active:scale-95"
-              title="Abrir sidebar"
+              onClick={() => setSettingsOpen(true)}
+              className="rounded-xl p-2.5 text-zinc-500 transition-all duration-200 hover:bg-white/[0.04] hover:text-zinc-200"
+              title="Configurações"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <rect x="4" y="4" width="16" height="16" rx="3" />
-                <path d="M10 4v16" />
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
               </svg>
             </button>
-          )}
-          <div>
-            <ModelSelector models={models} clientRef={clientRef} />
-            <button className="text-xs text-zinc-600 transition-colors hover:text-zinc-400 tracking-wide">Definir como padrão</button>
+            <button className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 text-[11px] font-bold text-black shadow-lg shadow-amber-500/20 transition-all duration-200 hover:scale-105 hover:shadow-amber-500/30 active:scale-95" title="Perfil">
+              JP
+            </button>
           </div>
         </div>
-
-        <div className="flex items-center gap-1.5">
-          <button className="rounded-xl p-2.5 text-zinc-500 transition-all duration-200 hover:bg-white/[0.04] hover:text-zinc-200" title="Status">
-            <span className={`block h-2.5 w-2.5 rounded-full ${statusDot} ring-2 ring-black/50`} />
-          </button>
-          <button
-            onClick={() => setSettingsOpen(true)}
-            className="rounded-xl p-2.5 text-zinc-500 transition-all duration-200 hover:bg-white/[0.04] hover:text-zinc-200"
-            title="Configurações"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
-            </svg>
-          </button>
-          <button className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 text-[11px] font-bold text-black shadow-lg shadow-amber-500/20 transition-all duration-200 hover:scale-105 hover:shadow-amber-500/30 active:scale-95" title="Perfil">
-            JP
-          </button>
-        </div>
-      </header>
+      </div>
 
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 && !streaming ? (
