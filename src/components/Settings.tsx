@@ -709,7 +709,7 @@ function ToolsSection({ clientRef }: { clientRef: React.RefObject<OpenClawClient
       ) : (
         <div className="space-y-2">
           {tools.map((tool, i) => {
-            const id = tool.name || tool.id || `tool-${i}`;
+            const id = `${tool.name || tool.id || "tool"}-${i}`;
             const isExpanded = expanded === id;
             return (
               <DataCard key={id}>
