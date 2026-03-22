@@ -45,7 +45,7 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
     const ta = textareaRef.current;
     if (!ta) return;
     ta.style.height = "auto";
-    ta.style.height = Math.min(ta.scrollHeight, 220) + "px";
+    ta.style.height = Math.min(ta.scrollHeight, 180) + "px";
   }, [inputValue]);
 
   useEffect(() => {
@@ -114,8 +114,8 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
   );
 
   return (
-    <div className="border-t border-zinc-800/80 bg-[#171717] px-4 pb-5 pt-3">
-      <div className="mx-auto max-w-3xl">
+    <div className="w-full px-4 pb-5 pt-3">
+      <div className="mx-auto max-w-[920px]">
         {attachments.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2 px-1">
             {attachments.map((att, i) => (
@@ -135,8 +135,8 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
         )}
 
         <div
-          className={`rounded-[28px] border bg-zinc-900/95 p-3 shadow-2xl shadow-black/20 transition-colors ${
-            dragOver ? "border-emerald-500/50 bg-emerald-950/10" : "border-zinc-800 focus-within:border-zinc-700"
+          className={`rounded-[26px] border bg-[#1f1f20] px-5 py-4 shadow-[0_8px_30px_rgba(0,0,0,0.22)] transition-colors ${
+            dragOver ? "border-emerald-500/50 bg-emerald-950/10" : "border-[#323234] focus-within:border-[#454547]"
           }`}
           onDrop={(e) => {
             e.preventDefault();
@@ -149,18 +149,6 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
           }}
           onDragLeave={() => setDragOver(false)}
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={ACCEPTED_TYPES}
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files) handleFiles(e.target.files);
-              e.target.value = "";
-            }}
-          />
-
           <textarea
             ref={textareaRef}
             value={inputValue}
@@ -170,61 +158,82 @@ export function ChatInput({ onSend, onAbort }: ChatInputProps) {
             placeholder={isConnected ? "How can I help you today?" : "Desconectado..."}
             disabled={!isConnected}
             rows={1}
-            className="max-h-[220px] min-h-[52px] w-full resize-none bg-transparent px-1 py-1 text-[15px] leading-relaxed text-zinc-100 outline-none placeholder:text-zinc-600 disabled:opacity-50"
+            className="max-h-[180px] min-h-[40px] w-full resize-none bg-transparent p-0 text-[16px] leading-relaxed text-zinc-100 outline-none placeholder:text-zinc-500 disabled:opacity-50"
           />
 
           <div className="mt-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_TYPES}
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) handleFiles(e.target.files);
+                  e.target.value = "";
+                }}
+              />
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!isConnected}
-                className="rounded-full p-2 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-30"
+                className="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-30"
                 title="Anexar imagem"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                disabled
-                className="rounded-full p-2 text-zinc-700"
-                title="Ferramentas extras em breve"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
               </button>
+              <button
+                type="button"
+                disabled
+                className="rounded-full p-2 text-zinc-500 opacity-70"
+                title="Ferramentas extras em breve"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z" />
+                </svg>
+              </button>
             </div>
 
-            {isStreaming ? (
+            <div className="flex items-center gap-2">
               <button
-                onClick={onAbort}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-700 text-zinc-200 transition-colors hover:bg-zinc-600"
-                title="Parar"
+                type="button"
+                disabled
+                className="rounded-full p-2 text-zinc-400"
+                title="Microfone em breve"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="6" width="12" height="12" rx="2" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M12 15a3 3 0 003-3V7a3 3 0 10-6 0v5a3 3 0 003 3Z" />
+                  <path d="M19 11a7 7 0 01-14 0M12 18v3" />
                 </svg>
               </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={(!inputValue.trim() && attachments.length === 0) || !isConnected}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black transition-colors hover:bg-zinc-200 disabled:opacity-20 disabled:hover:bg-white"
-                title="Enviar"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M12 19V5M5 12l7-7 7 7" />
-                </svg>
-              </button>
-            )}
+
+              {isStreaming ? (
+                <button
+                  onClick={onAbort}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-700 text-zinc-200 transition hover:bg-zinc-600"
+                  title="Parar"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="6" width="12" height="12" rx="2" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={(!inputValue.trim() && attachments.length === 0) || !isConnected}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black transition hover:bg-zinc-200 disabled:opacity-20 disabled:hover:bg-white"
+                  title="Enviar"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
         </div>
-
-        <p className="mt-2 text-center text-[11px] text-zinc-600">
-          LomboClaw pode errar. Se for coisa crítica, confira antes de sair acelerando.
-        </p>
       </div>
     </div>
   );

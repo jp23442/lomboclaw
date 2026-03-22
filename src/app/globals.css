@@ -5,18 +5,14 @@ html, body, #__next {
   overflow: hidden;
 }
 
-html {
-  background: #171717;
-}
-
-body {
+html, body {
   background: #171717;
   color: #f4f4f5;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #3f3f46 transparent;
+  scrollbar-color: #3a3a3d transparent;
 }
 
 ::-webkit-scrollbar {
@@ -27,11 +23,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: #3a3a3d;
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  background: #4a4a4f;
 }
 
 @supports (padding: env(safe-area-inset-bottom)) {
@@ -76,12 +72,8 @@ body {
   margin: 0.5rem 0;
   line-height: 1.75;
 }
-.msg-content p:first-child {
-  margin-top: 0;
-}
-.msg-content p:last-child {
-  margin-bottom: 0;
-}
+.msg-content p:first-child { margin-top: 0; }
+.msg-content p:last-child { margin-bottom: 0; }
 
 .msg-content ul, .msg-content ol {
   margin: 0.5rem 0;
@@ -91,12 +83,8 @@ body {
   margin: 0.25rem 0;
   line-height: 1.65;
 }
-.msg-content ul li {
-  list-style-type: disc;
-}
-.msg-content ol li {
-  list-style-type: decimal;
-}
+.msg-content ul li { list-style-type: disc; }
+.msg-content ol li { list-style-type: decimal; }
 
 .msg-content h1, .msg-content h2, .msg-content h3, .msg-content h4 {
   font-weight: 600;

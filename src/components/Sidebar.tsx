@@ -32,12 +32,12 @@ function timeAgo(timestamp: number): string {
   return `${days}d`;
 }
 
-type SidebarTab = "chats" | "models" | "devices";
+type SidebarMode = "main" | "models" | "devices";
 
 export function Sidebar({ onNewChat, models, devices, health, onRefresh }: SidebarProps) {
   const { sessions, activeSessionId, setActiveSession, deleteSession, toggleSidebar, connectionState } = useAppStore();
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<SidebarTab>("chats");
+  const [mode, setMode] = useState<SidebarMode>("main");
 
   const statusColor = {
     connected: "bg-emerald-500",
@@ -64,31 +64,53 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
     else older.push(s);
   }
 
+  const navItems = [
+    {
+      key: "main" as SidebarMode,
+      label: "New Chat",
+      icon: <path d="M12 5v14M5 12h14" />,
+      action: onNewChat,
+    },
+    {
+      key: "main" as SidebarMode,
+      label: "Search",
+      icon: <><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></>,
+      action: () => setMode("main"),
+    },
+    {
+      key: "models" as SidebarMode,
+      label: "Models",
+      icon: <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />,
+      action: () => setMode("models"),
+    },
+    {
+      key: "devices" as SidebarMode,
+      label: "Workspace",
+      icon: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /></>,
+      action: () => setMode("devices"),
+    },
+  ];
+
   const renderSession = (session: typeof sessions[0]) => (
     <div
       key={session.id}
-      className={`group flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors ${
+      className={`group flex cursor-pointer items-center gap-2 rounded-xl px-2 py-2 text-sm transition-colors ${
         session.id === activeSessionId
-          ? "bg-zinc-800 text-zinc-100"
-          : "text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
+          ? "bg-zinc-800/80 text-zinc-100"
+          : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
       }`}
       onClick={() => setActiveSession(session.id)}
     >
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-zinc-500">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-        </svg>
-      </div>
       <div className="min-w-0 flex-1">
         <div className="truncate">{session.title}</div>
-        <div className="text-[10px] text-zinc-600">{timeAgo(session.updatedAt)}</div>
       </div>
+      <span className="shrink-0 text-[10px] text-zinc-600 group-hover:hidden">{timeAgo(session.updatedAt)}</span>
       <button
         onClick={(e) => {
           e.stopPropagation();
           deleteSession(session.id);
         }}
-        className="opacity-0 transition group-hover:opacity-100 rounded-lg p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-200"
+        className="hidden rounded-lg p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-200 group-hover:block"
         title="Apagar conversa"
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -101,178 +123,160 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
   const renderGroup = (label: string, items: typeof sessions) => {
     if (items.length === 0) return null;
     return (
-      <div className="mb-4">
-        <div className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wide text-zinc-600">{label}</div>
+      <div className="mb-5">
+        <div className="mb-2 px-2 text-xs text-zinc-600">{label}</div>
         <div className="space-y-1">{items.map(renderSession)}</div>
       </div>
     );
   };
 
   return (
-    <aside className="flex h-full w-[300px] flex-col border-r border-zinc-800 bg-[#0f0f10]">
-      <div className="flex items-center justify-between px-3 pb-2 pt-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-100 text-zinc-950 shadow-sm">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+    <aside className="flex h-full w-[308px] flex-col border-r border-zinc-900 bg-[#0b0b0c] text-zinc-100">
+      <div className="flex items-center justify-between px-5 pb-5 pt-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="8.5" />
+              <path d="M15.5 7.5v9" />
+              <path d="M8.5 12a3.5 3.5 0 107 0 3.5 3.5 0 10-7 0Z" />
             </svg>
           </div>
-          <div>
-            <div className="text-sm font-semibold text-zinc-100">LomboClaw</div>
-            <div className="text-[11px] text-zinc-500">OpenWebUI vibes, sem lombo</div>
-          </div>
+          <div className="text-[15px] font-semibold text-zinc-100">Open WebUI</div>
         </div>
         <button
           onClick={toggleSidebar}
-          className="rounded-xl p-2 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+          className="rounded-lg p-1.5 text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-200"
           title="Fechar sidebar"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <path d="M9 3v18" />
+            <rect x="4" y="4" width="16" height="16" rx="3" />
+            <path d="M10 4v16" />
           </svg>
         </button>
       </div>
 
-      <div className="px-3 pb-3">
-        <button
-          onClick={onNewChat}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-100 px-4 py-3 text-sm font-medium text-zinc-950 transition hover:bg-white"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Nova conversa
-        </button>
-      </div>
-
-      <div className="px-3 pb-3">
-        <div className="relative">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600">
-            <circle cx="11" cy="11" r="8" />
-            <path d="M21 21l-4.35-4.35" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar conversas..."
-            className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-9 py-2.5 text-sm text-zinc-200 outline-none transition focus:border-zinc-700"
-          />
-        </div>
-      </div>
-
-      <div className="px-3 pb-2">
-        <div className="grid grid-cols-3 gap-1 rounded-2xl border border-zinc-800 bg-zinc-900 p-1">
-          {[
-            ["chats", "Chats"],
-            ["models", "Modelos"],
-            ["devices", "Devices"],
-          ].map(([key, label]) => (
+      <div className="px-4 pb-5">
+        <div className="space-y-1">
+          {navItems.map((item, index) => (
             <button
-              key={key}
-              onClick={() => setTab(key as SidebarTab)}
-              className={`rounded-xl px-3 py-2 text-xs transition-colors ${
-                tab === key ? "bg-zinc-800 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"
-              }`}
+              key={`${item.label}-${index}`}
+              onClick={item.action}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] text-zinc-300 transition hover:bg-zinc-900 hover:text-zinc-100"
             >
-              {label}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-zinc-400">
+                {item.icon}
+              </svg>
+              {item.label}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 pb-3">
-        {tab === "chats" && (
-          filtered.length === 0 ? (
-            <p className="py-10 text-center text-xs text-zinc-600">
-              {search ? "Nada encontrado" : "Nenhuma conversa ainda"}
-            </p>
-          ) : (
-            <>
-              {renderGroup("Hoje", today)}
-              {renderGroup("Ontem", yesterday)}
-              {renderGroup("Anteriores", older)}
-            </>
-          )
-        )}
+      {mode === "main" && (
+        <>
+          <div className="px-4 pb-5">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search chats"
+              className="w-full rounded-xl border border-zinc-900 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-200 outline-none transition placeholder:text-zinc-600 focus:border-zinc-800"
+            />
+          </div>
 
-        {tab === "models" && (
+          <div className="flex-1 overflow-y-auto px-4">
+            <div className="mb-5">
+              <div className="mb-2 px-2 text-xs text-zinc-600">Channels</div>
+              <div className="rounded-xl px-2 py-2 text-sm text-zinc-300 hover:bg-zinc-900"># general</div>
+            </div>
+
+            <div className="mb-5">
+              <div className="mb-2 px-2 text-xs text-zinc-600">Folders</div>
+              <div className="space-y-1">
+                <div className="rounded-xl px-2 py-2 text-sm text-zinc-300 hover:bg-zinc-900">💵 Finance</div>
+                <div className="rounded-xl px-2 py-2 text-sm text-zinc-300 hover:bg-zinc-900">📕 Study</div>
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-2 px-2 text-xs text-zinc-600">Chats</div>
+              {filtered.length === 0 ? (
+                <p className="px-2 py-8 text-xs text-zinc-600">{search ? "Nada encontrado" : "Nenhuma conversa"}</p>
+              ) : (
+                <>
+                  {renderGroup("Today", today)}
+                  {renderGroup("Yesterday", yesterday)}
+                  {renderGroup("Older", older)}
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {mode === "models" && (
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          <div className="mb-3 px-2 text-xs text-zinc-600">Available models</div>
           <div className="space-y-2">
             {models.length === 0 ? (
-              <p className="py-10 text-center text-xs text-zinc-600">Nenhum modelo carregado</p>
+              <p className="px-2 py-8 text-xs text-zinc-600">Nenhum modelo carregado</p>
             ) : (
               models.map((model) => (
-                <div key={model.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-3">
-                  <div className="flex items-center gap-2">
-                    <div className={`h-2.5 w-2.5 rounded-full ${model.reasoning ? "bg-violet-400" : "bg-emerald-400"}`} />
-                    <div className="truncate text-sm font-medium text-zinc-200">{model.name || model.id}</div>
-                  </div>
+                <div key={model.id} className="rounded-2xl border border-zinc-900 bg-zinc-950 p-3">
+                  <div className="text-sm text-zinc-100">{model.name || model.id}</div>
                   <div className="mt-1 truncate font-mono text-[11px] text-zinc-500">{model.id}</div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {model.provider && <span className="rounded-full border border-zinc-800 px-2 py-0.5 text-[10px] text-zinc-500">{model.provider}</span>}
-                    {model.reasoning && <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-[10px] text-violet-300">reasoning</span>}
+                    {model.provider && <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-400">{model.provider}</span>}
+                    {model.reasoning && <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] text-violet-300">reasoning</span>}
                   </div>
                 </div>
               ))
             )}
           </div>
-        )}
+        </div>
+      )}
 
-        {tab === "devices" && (
+      {mode === "devices" && (
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          <div className="mb-3 px-2 text-xs text-zinc-600">Workspace / devices</div>
           <div className="space-y-2">
-            {devices.length === 0 ? (
-              <p className="py-10 text-center text-xs text-zinc-600">Nenhum device pareado</p>
-            ) : (
-              devices.map((device) => (
-                <div key={device.deviceId + device.clientId} className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-3">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                    <div className="truncate text-sm font-medium text-zinc-200">{device.clientId}</div>
-                  </div>
-                  <div className="mt-1 text-[11px] text-zinc-500">{device.platform || "unknown platform"}</div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    <span className="rounded-full border border-zinc-800 px-2 py-0.5 text-[10px] text-zinc-500">{device.deviceId}</span>
-                    {device.role && <span className="rounded-full border border-zinc-800 px-2 py-0.5 text-[10px] text-zinc-500">{device.role}</span>}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
+            <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-3">
+              <div className="mb-2 flex items-center gap-2 text-sm text-zinc-200">
+                <span className={`h-2 w-2 rounded-full ${statusColor}`} />
+                Gateway {health?.status || connectionState}
+              </div>
+              <div className="space-y-1 text-[11px] text-zinc-500">
+                <div className="flex justify-between gap-2"><span>Version</span><span className="text-zinc-300">{health ? `v${health.version}` : "-"}</span></div>
+                <div className="flex justify-between gap-2"><span>Uptime</span><span className="text-zinc-300">{health ? formatUptime(health.uptimeMs) : "-"}</span></div>
+              </div>
+              <button
+                onClick={onRefresh}
+                className="mt-3 rounded-lg bg-zinc-900 px-3 py-2 text-xs text-zinc-300 transition hover:bg-zinc-800"
+              >
+                Refresh
+              </button>
+            </div>
 
-      <div className="border-t border-zinc-800 px-3 py-3">
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
-              <span className="text-xs text-zinc-300">Gateway {health?.status || connectionState}</span>
-            </div>
-            <button
-              onClick={onRefresh}
-              className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
-              title="Atualizar"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M23 4v6h-6M1 20v-6h6" />
-                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-              </svg>
-            </button>
+            {devices.map((device) => (
+              <div key={device.deviceId + device.clientId} className="rounded-2xl border border-zinc-900 bg-zinc-950 p-3">
+                <div className="text-sm text-zinc-100">{device.clientId}</div>
+                <div className="mt-1 text-[11px] text-zinc-500">{device.platform || "unknown platform"}</div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-400">{device.deviceId}</span>
+                  {device.role && <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-400">{device.role}</span>}
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="space-y-1 text-[11px] text-zinc-500">
-            <div className="flex justify-between gap-2">
-              <span>Versão</span>
-              <span className="text-zinc-300">{health ? `v${health.version}` : "-"}</span>
-            </div>
-            <div className="flex justify-between gap-2">
-              <span>Uptime</span>
-              <span className="text-zinc-300">{health ? formatUptime(health.uptimeMs) : "-"}</span>
-            </div>
-            <div className="flex justify-between gap-2">
-              <span>Modelos</span>
-              <span className="text-zinc-300">{models.length}</span>
-            </div>
+        </div>
+      )}
+
+      <div className="border-t border-zinc-900 px-3 py-4">
+        <div className="flex items-center gap-3 rounded-2xl px-2 py-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-[11px] font-semibold text-black">TB</div>
+          <div className="min-w-0">
+            <div className="truncate text-sm text-zinc-200">Tim Baek</div>
+            <div className="text-[11px] text-zinc-600">local session</div>
           </div>
         </div>
       </div>

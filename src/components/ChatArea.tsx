@@ -17,11 +17,10 @@ interface ChatAreaProps {
   clientRef: React.RefObject<OpenClawClient | null>;
 }
 
-const quickSuggestions = [
-  "Mostre um snippet de código bom",
-  "Me ajuda a estudar",
-  "Monta um plano de ação",
-  "Analisa um arquivo ou projeto",
+const suggestions = [
+  { title: "Show me a code snippet", subtitle: "of a website's sticky header" },
+  { title: "Help me study", subtitle: "vocabulary for a college entrance exam" },
+  { title: "Overcome procrastination", subtitle: "give me tips" },
 ];
 
 export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: ChatAreaProps) {
@@ -30,6 +29,7 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   const messages = activeSession?.messages ?? [];
+  const currentModel = models[0]?.name || "LomboClaw";
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -44,33 +44,37 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
 
   return (
     <div className="flex h-full flex-1 flex-col bg-[#171717] text-zinc-100">
-      <header className="flex h-14 items-center gap-3 border-b border-zinc-800/80 px-4 shrink-0">
-        {!sidebarOpen && (
-          <button
-            onClick={toggleSidebar}
-            className="rounded-xl p-2 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
-            title="Abrir sidebar"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <path d="M9 3v18" />
+      <header className="flex h-14 items-start justify-between border-b border-zinc-900 px-5 pt-2 shrink-0">
+        <div className="flex items-start gap-3">
+          {!sidebarOpen && (
+            <button
+              onClick={toggleSidebar}
+              className="mt-0.5 rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-200"
+              title="Abrir sidebar"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="4" y="4" width="16" height="16" rx="3" />
+                <path d="M10 4v16" />
+              </svg>
+            </button>
+          )}
+          <div>
+            <ModelSelector models={models} clientRef={clientRef} />
+            <button className="text-sm text-zinc-500 transition hover:text-zinc-300">Set as default</button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 pt-1">
+          <button className="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-200" title="Status">
+            <span className={`block h-2 w-2 rounded-full ${statusDot}`} />
+          </button>
+          <button className="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-200" title="Configurações">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M4 6h10M4 18h16M14 6l2-2 2 2M8 18l2 2 2-2" />
             </svg>
           </button>
-        )}
-
-        <ModelSelector models={models} clientRef={clientRef} />
-
-        <div className="ml-auto flex items-center gap-2">
-          <div className="flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/70 px-3 py-1.5 text-xs text-zinc-400">
-            <span className={`h-2 w-2 rounded-full ${statusDot}`} />
-            {connectionState}
-          </div>
-          <button
-            onClick={onNewChat}
-            className="rounded-xl border border-zinc-800 bg-zinc-900/70 px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-900 hover:text-zinc-100"
-            title="Nova conversa"
-          >
-            Nova chat
+          <button className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-[11px] font-semibold text-black" title="Perfil">
+            TB
           </button>
         </div>
       </header>
@@ -78,30 +82,40 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 && !streaming ? (
           <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-lg shadow-black/20">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M12 3a9 9 0 100 18 9 9 0 000-18Z" />
-                <path d="M9.5 10a1.5 1.5 0 110 3 1.5 1.5 0 010-3Zm5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3Z" />
-              </svg>
+            <div className="mb-4 flex items-center gap-4">
+              <div className="flex h-13 w-13 items-center justify-center rounded-full bg-white text-black">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="8.5" />
+                  <path d="M15.5 7.5v9" />
+                  <path d="M8.5 12a3.5 3.5 0 107 0 3.5 3.5 0 10-7 0Z" />
+                </svg>
+              </div>
+              <h1 className="text-[40px] font-medium tracking-tight text-zinc-100">{currentModel}</h1>
             </div>
-            <h1 className="mb-2 text-3xl font-semibold tracking-tight text-zinc-100">
-              {models[0]?.name || "LomboClaw"}
-            </h1>
-            <p className="max-w-xl text-sm text-zinc-500">
-              GUI puxada pro OpenWebUI, mas com o arsenal do OpenClaw por baixo: terminal, arquivos, web, devices e ferramentas.
-            </p>
 
-            <div className="mt-8 grid w-full max-w-xl gap-3">
-              {quickSuggestions.map((item) => (
-                <button
-                  key={item}
-                  onClick={() => useAppStore.getState().setInputValue(item)}
-                  className="rounded-2xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-left text-sm text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
-                >
-                  <div className="mb-1 text-xs text-zinc-500">Sugestão</div>
-                  <div>{item}</div>
-                </button>
-              ))}
+            <div className="w-full max-w-[860px]">
+              <ChatInput onSend={onSend} onAbort={onAbort} />
+            </div>
+
+            <div className="mt-9 w-full max-w-[430px] text-left">
+              <div className="mb-3 flex items-center gap-2 text-sm text-zinc-500">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M13 3L4 14h7l-1 7 9-11h-7l1-7Z" />
+                </svg>
+                Suggested
+              </div>
+              <div className="space-y-4">
+                {suggestions.map((item) => (
+                  <button
+                    key={item.title}
+                    onClick={() => useAppStore.getState().setInputValue(`${item.title} ${item.subtitle}`)}
+                    className="block text-left transition hover:opacity-80"
+                  >
+                    <div className="text-[18px] font-semibold text-zinc-200">{item.title}</div>
+                    <div className="text-sm text-zinc-500">{item.subtitle}</div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         ) : (
@@ -109,7 +123,7 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
             {messages.map((msg, i) => (
               <div key={msg.id}>
                 {i > 0 && msg.role !== messages[i - 1]?.role && (
-                  <div className="my-4 border-t border-zinc-800/40" />
+                  <div className="my-4 border-t border-zinc-900" />
                 )}
                 <MessageBubble message={msg} />
               </div>
@@ -120,7 +134,7 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
         )}
       </div>
 
-      <ChatInput onSend={onSend} onAbort={onAbort} />
+      {(messages.length > 0 || streaming) && <ChatInput onSend={onSend} onAbort={onAbort} />}
     </div>
   );
 }
