@@ -1,0 +1,36 @@
+diff --git a/src/gateway/server-methods/chat.ts b/src/gateway/server-methods/chat.ts
+index 94dd856c82..ec19104855 100644
+--- a/src/gateway/server-methods/chat.ts
++++ b/src/gateway/server-methods/chat.ts
+@@ -66,6 +66,7 @@ import { injectTimestamp, timestampOptsFromConfig } from "./agent-timestamp.js";
+ import { setGatewayDedupeEntry } from "./agent-wait-dedupe.js";
+ import { normalizeRpcAttachmentsToChatAttachments } from "./attachment-normalize.js";
+ import { appendInjectedAssistantMessageToTranscript } from "./chat-transcript-inject.js";
++import { captureLiveMemory, loadChatMemoryRecall } from "./chat-memory.js";
+ import type {
+   GatewayRequestContext,
+   GatewayRequestHandlerOptions,
+@@ -1389,9 +1390,22 @@ export const chatHandlers: GatewayRequestHandlers = {
+         p.thinking && trimmedMessage && !trimmedMessage.startsWith("/"),
+       );
+       const commandBody = injectThinking ? `/think ${p.thinking} ${parsedMessage}` : parsedMessage;
+-      const messageForAgent = systemProvenanceReceipt
++      void captureLiveMemory({
++        cfg,
++        sessionKey,
++        message: parsedMessage,
++      });
++      const recalledMemory = await loadChatMemoryRecall({
++        cfg,
++        sessionKey,
++        message: parsedMessage,
++      });
++      const messageForAgentBase = systemProvenanceReceipt
+         ? [systemProvenanceReceipt, parsedMessage].filter(Boolean).join("\n\n")
+         : parsedMessage;
++      const messageForAgent = recalledMemory.injectedPrompt
++        ? `${recalledMemory.injectedPrompt}\n\n${messageForAgentBase}`
++        : messageForAgentBase;
+       const clientInfo = client?.connect?.client;
+       const {
+         originatingChannel,

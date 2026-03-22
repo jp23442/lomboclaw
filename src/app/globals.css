@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+html, body, #__next {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+
+/* iOS safe areas */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Code blocks */
+.msg-content pre {
+  position: relative;
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  background: #18181b !important;
+  border: 1px solid #27272a;
+  margin: 0.75rem 0;
+}
+
+.msg-content pre code {
+  display: block;
+  padding: 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace;
+  color: #e4e4e7;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.msg-content code:not(pre code) {
+  background: #27272a;
+  color: #a78bfa;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace;
+}
+
+/* Prose overrides */
+.msg-content p {
+  margin: 0.5rem 0;
+  line-height: 1.7;
+}
+.msg-content p:first-child {
+  margin-top: 0;
+}
+.msg-content p:last-child {
+  margin-bottom: 0;
+}
+
+.msg-content ul, .msg-content ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+.msg-content li {
+  margin: 0.25rem 0;
+  line-height: 1.6;
+}
+.msg-content ul li {
+  list-style-type: disc;
+}
+.msg-content ol li {
+  list-style-type: decimal;
+}
+
+.msg-content h1, .msg-content h2, .msg-content h3, .msg-content h4 {
+  font-weight: 600;
+  color: #f4f4f5;
+  margin: 1rem 0 0.5rem;
+}
+.msg-content h1 { font-size: 1.25rem; }
+.msg-content h2 { font-size: 1.125rem; }
+.msg-content h3 { font-size: 1rem; }
+
+.msg-content blockquote {
+  border-left: 3px solid #3f3f46;
+  padding-left: 0.75rem;
+  color: #a1a1aa;
+  margin: 0.5rem 0;
+}
+
+.msg-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.875rem;
+}
+.msg-content th, .msg-content td {
+  border: 1px solid #3f3f46;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+.msg-content th {
+  background: #27272a;
+  font-weight: 600;
+  color: #e4e4e7;
+}
+
+.msg-content a {
+  color: #60a5fa;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.msg-content a:hover {
+  color: #93bbfd;
+}
+
+.msg-content hr {
+  border-color: #3f3f46;
+  margin: 1rem 0;
+}
+
+/* Syntax highlighting basics */
+.msg-content pre .keyword { color: #c084fc; }
+.msg-content pre .string { color: #34d399; }
+.msg-content pre .comment { color: #71717a; font-style: italic; }
+.msg-content pre .number { color: #fb923c; }
+.msg-content pre .function { color: #60a5fa; }
+
+/* Thinking animation */
+@keyframes thinking-dot {
+  0%, 80%, 100% { opacity: 0.3; }
+  40% { opacity: 1; }
+}
+.thinking-dot {
+  animation: thinking-dot 1.4s infinite;
+}
+.thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* Tool call expand animation */
+@keyframes slide-down {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 200px; }
+}
+.tool-expand {
+  animation: slide-down 0.2s ease-out;
+  overflow: hidden;
+}
