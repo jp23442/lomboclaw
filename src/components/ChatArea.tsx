@@ -47,7 +47,7 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
   return (
     <div className="flex h-full flex-1 flex-col bg-gradient-to-b from-[#0f0f11] to-[#0c0c0e] text-zinc-100 relative">
       {/* Floating header */}
-      <div className="absolute top-0 left-0 right-0 z-40 pointer-events-none">
+      <div className="absolute top-6 left-0 right-0 z-40 pointer-events-none">
         <div className="flex h-16 items-center justify-between px-6 pointer-events-auto">
           <div className="flex items-center gap-4">
             {!sidebarOpen && (
