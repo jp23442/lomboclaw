@@ -243,8 +243,8 @@ export class OpenClawClient {
       this.onStateChange("connected");
       console.log("[OpenClaw] Connected! connId:", this.connId);
     } catch (e: unknown) {
-      const err = e as Record<string, unknown>;
-      const details = err?.details as Record<string, unknown>;
+      const err = e as Error & { code?: string; details?: Record<string, unknown> };
+      const details = err?.details;
 
       // Handle pairing required - auto-approve via requestId
       if (err?.code === "NOT_PAIRED" && details?.requestId) {
@@ -274,7 +274,7 @@ export class OpenClawClient {
         }
       }
 
-      const errMsg = (err?.message as string) || "Auth failed";
+      const errMsg = err?.message || "Auth failed";
       console.error("[OpenClaw] Auth failed:", e, "code:", err?.code, "message:", errMsg, "details:", JSON.stringify(details));
       this.onAuthError?.(errMsg);
       this.onStateChange("error");
@@ -443,10 +443,15 @@ export class OpenClawClient {
       pending.resolve(frame.payload);
     } else {
       const err = frame.error as Record<string, unknown> | undefined;
-      const code = err?.code || "UNKNOWN";
-      const message = err?.message || "Request failed";
+      const code = (err?.code as string) || "UNKNOWN";
+      const message = (err?.message as string) || "Request failed";
+      const details = err?.details as Record<string, unknown> | undefined;
       console.warn(`[OpenClaw] RPC error: ${code} - ${message}`);
-      pending.reject(new Error(`${code}: ${message}`));
+      // Propagate structured error so catch blocks can read .code / .details
+      const error = new Error(`${code}: ${message}`) as Error & { code: string; details?: Record<string, unknown> };
+      error.code = code;
+      error.details = details;
+      pending.reject(error);
     }
   }
 
