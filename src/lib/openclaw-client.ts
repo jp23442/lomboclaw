@@ -437,8 +437,11 @@ export class OpenClawClient {
     if (frame.ok) {
       pending.resolve(frame.payload);
     } else {
-      console.error("[OpenClaw] Request failed:", frame.id, "error:", frame.error, "payload:", frame.payload, "raw:", JSON.stringify(frame));
-      pending.reject(frame.error || frame.payload);
+      const err = frame.error as Record<string, unknown> | undefined;
+      const code = err?.code || "UNKNOWN";
+      const message = err?.message || "Request failed";
+      console.warn(`[OpenClaw] RPC error: ${code} - ${message}`);
+      pending.reject(new Error(`${code}: ${message}`));
     }
   }
 
