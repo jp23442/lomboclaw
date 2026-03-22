@@ -47,28 +47,28 @@ export function ThinkingBlock({ thinking, isStreaming = false, defaultOpen = fal
   const preview = useMemo(() => summarize(thinking), [thinking]);
 
   return (
-    <div className="mb-2">
+    <div className="mb-3">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-400 transition-colors py-0.5 group w-full text-left"
+        className="flex items-center gap-2 text-[11px] text-zinc-500 hover:text-zinc-400 transition-all duration-200 py-1 px-2.5 -ml-2.5 rounded-lg hover:bg-white/[0.02] group w-full text-left"
       >
         {/* Chevron */}
         <svg
           width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-          className={`shrink-0 transition-transform ${open ? "rotate-90" : ""} ${isStreaming ? "text-purple-400" : "text-zinc-600"}`}
+          className={`shrink-0 transition-transform duration-200 ${open ? "rotate-90" : ""} ${isStreaming ? "text-violet-400" : "text-zinc-600"}`}
         >
           <path d="M9 18l6-6-6-6" />
         </svg>
 
-        <span className={`shrink-0 ${isStreaming ? "text-purple-400" : "text-zinc-500"}`}>
+        <span className={`shrink-0 font-medium ${isStreaming ? "text-violet-400" : "text-zinc-500"}`}>
           {isStreaming ? "Pensando" : "Pensou"}
         </span>
 
         {isStreaming ? (
-          <span className="flex gap-0.5 shrink-0">
-            <span className="thinking-dot w-1 h-1 rounded-full bg-purple-400" />
-            <span className="thinking-dot w-1 h-1 rounded-full bg-purple-400" />
-            <span className="thinking-dot w-1 h-1 rounded-full bg-purple-400" />
+          <span className="flex gap-1 shrink-0">
+            <span className="thinking-dot w-1.5 h-1.5 rounded-full bg-violet-400" />
+            <span className="thinking-dot w-1.5 h-1.5 rounded-full bg-violet-400" />
+            <span className="thinking-dot w-1.5 h-1.5 rounded-full bg-violet-400" />
           </span>
         ) : (
           <>
@@ -76,7 +76,7 @@ export function ThinkingBlock({ thinking, isStreaming = false, defaultOpen = fal
               por {formatDuration(wordCount)}
             </span>
             {!open && (
-              <span className="text-zinc-600/60 truncate ml-1 italic">
+              <span className="text-zinc-600/50 truncate ml-1 italic">
                 {preview}
               </span>
             )}
@@ -87,31 +87,31 @@ export function ThinkingBlock({ thinking, isStreaming = false, defaultOpen = fal
       {open && (
         <div
           ref={contentRef}
-          className="mt-1 ml-3 pl-3 border-l border-zinc-800 max-h-80 overflow-y-auto thinking-expand"
+          className="mt-2 ml-4 pl-4 border-l-2 border-violet-500/20 max-h-80 overflow-y-auto thinking-expand rounded-r-lg"
         >
-          <div className="text-[12px] text-zinc-500/80 whitespace-pre-wrap leading-relaxed space-y-1">
+          <div className="text-[12px] text-zinc-500/90 whitespace-pre-wrap leading-relaxed space-y-1.5">
             {thinking.split("\n").map((line, i) => {
               const trimmed = line.trim();
               if (!trimmed) return <div key={i} className="h-2" />;
               // Headers
               if (trimmed.startsWith("## ")) {
-                return <div key={i} className="text-zinc-400 font-medium mt-2">{trimmed.replace(/^##\s*/, "")}</div>;
+                return <div key={i} className="text-zinc-400 font-medium mt-3 mb-1">{trimmed.replace(/^##\s*/, "")}</div>;
               }
               if (trimmed.startsWith("# ")) {
-                return <div key={i} className="text-zinc-300 font-medium mt-2">{trimmed.replace(/^#\s*/, "")}</div>;
+                return <div key={i} className="text-zinc-300 font-semibold mt-3 mb-1">{trimmed.replace(/^#\s*/, "")}</div>;
               }
               // Bullet points
               if (/^[-*]\s/.test(trimmed)) {
-                return <div key={i} className="pl-3">{trimmed}</div>;
+                return <div key={i} className="pl-3 text-zinc-500">{trimmed}</div>;
               }
               // Numbered items
               if (/^\d+\.\s/.test(trimmed)) {
-                return <div key={i} className="pl-3">{trimmed}</div>;
+                return <div key={i} className="pl-3 text-zinc-500">{trimmed}</div>;
               }
               return <div key={i}>{trimmed}</div>;
             })}
             {isStreaming && (
-              <span className="inline-block w-0.5 h-[1em] bg-purple-400 animate-pulse ml-0.5 align-text-bottom" />
+              <span className="inline-block w-0.5 h-[1em] bg-gradient-to-t from-violet-500 to-violet-400 animate-pulse ml-0.5 align-text-bottom rounded-full" />
             )}
           </div>
         </div>

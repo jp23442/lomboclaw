@@ -94,15 +94,15 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
   const renderSession = (session: typeof sessions[0]) => (
     <div
       key={session.id}
-      className={`group flex cursor-pointer items-center gap-2 rounded-xl px-2 py-2 text-sm transition-colors ${
+      className={`group flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 ${
         session.id === activeSessionId
-          ? "bg-zinc-800/80 text-zinc-100"
-          : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+          ? "bg-white/[0.06] text-zinc-100 border border-white/[0.04]"
+          : "text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 border border-transparent"
       }`}
       onClick={() => setActiveSession(session.id)}
     >
       <div className="min-w-0 flex-1">
-        <div className="truncate">{session.title}</div>
+        <div className="truncate text-[13px]">{session.title}</div>
       </div>
       <span className="shrink-0 text-[10px] text-zinc-600 group-hover:hidden">{timeAgo(session.updatedAt)}</span>
       <button
@@ -110,7 +110,7 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
           e.stopPropagation();
           deleteSession(session.id);
         }}
-        className="hidden rounded-lg p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-200 group-hover:block"
+        className="hidden rounded-lg p-1.5 text-zinc-500 hover:bg-red-500/20 hover:text-red-400 group-hover:block transition-colors"
         title="Apagar conversa"
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -123,45 +123,47 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
   const renderGroup = (label: string, items: typeof sessions) => {
     if (items.length === 0) return null;
     return (
-      <div className="mb-5">
-        <div className="mb-2 px-2 text-xs text-zinc-600">{label}</div>
+      <div className="mb-6">
+        <div className="mb-2.5 px-3 text-[11px] font-medium uppercase tracking-wider text-zinc-600">{label}</div>
         <div className="space-y-1">{items.map(renderSession)}</div>
       </div>
     );
   };
 
   return (
-    <aside className="flex h-full w-[308px] flex-col border-r border-zinc-900 bg-[#0b0b0c] text-zinc-100">
-      <div className="flex items-center justify-between px-5 pb-5 pt-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
+    <aside className="flex h-full w-[300px] flex-col border-r border-white/[0.04] bg-gradient-to-b from-[#0a0a0c] to-[#080809] text-zinc-100">
+      <div className="flex items-center justify-between px-5 pb-6 pt-5">
+        <div className="flex items-center gap-3.5">
+          <div className="relative">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/25">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+            </div>
           </div>
-          <div className="text-[15px] font-semibold text-zinc-100">LomboClaw</div>
+          <div className="text-[16px] font-semibold bg-gradient-to-r from-zinc-100 to-zinc-300 bg-clip-text text-transparent">LomboClaw</div>
         </div>
         <button
           onClick={toggleSidebar}
-          className="rounded-lg p-1.5 text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-200"
+          className="rounded-xl p-2 text-zinc-500 transition-all duration-200 hover:bg-white/[0.04] hover:text-zinc-200 active:scale-95"
           title="Fechar sidebar"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <rect x="4" y="4" width="16" height="16" rx="3" />
             <path d="M10 4v16" />
           </svg>
         </button>
       </div>
 
-      <div className="px-4 pb-5">
+      <div className="px-4 pb-6">
         <div className="space-y-1">
           {navItems.map((item, index) => (
             <button
               key={`${item.label}-${index}`}
               onClick={item.action}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] text-zinc-300 transition hover:bg-zinc-900 hover:text-zinc-100"
+              className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-[14px] text-zinc-400 transition-all duration-200 hover:bg-white/[0.04] hover:text-zinc-100 active:scale-[0.98]"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-zinc-400">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0 text-zinc-500">
                 {item.icon}
               </svg>
               {item.label}
@@ -173,13 +175,19 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
       {mode === "main" && (
         <>
           <div className="px-4 pb-5">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setBuscar(e.target.value)}
-              placeholder="Buscar conversas"
-              className="w-full rounded-xl border border-zinc-900 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-200 outline-none transition placeholder:text-zinc-600 focus:border-zinc-800"
-            />
+            <div className="relative">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setBuscar(e.target.value)}
+                placeholder="Buscar conversas"
+                className="w-full rounded-xl border border-white/[0.04] bg-white/[0.02] pl-10 pr-4 py-2.5 text-sm text-zinc-200 outline-none transition-all duration-200 placeholder:text-zinc-600 focus:border-white/[0.08] focus:bg-white/[0.03]"
+              />
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-4">
@@ -255,11 +263,11 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
         </div>
       )}
 
-      <div className="border-t border-zinc-900 px-3 py-4">
-        <div className="flex items-center gap-3 rounded-2xl px-2 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-[11px] font-semibold text-black">JP</div>
+      <div className="border-t border-white/[0.04] px-4 py-4">
+        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/[0.03] cursor-pointer">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 text-[11px] font-bold text-black shadow-lg shadow-amber-500/20">JP</div>
           <div className="min-w-0">
-            <div className="truncate text-sm text-zinc-200">João</div>
+            <div className="truncate text-[13px] font-medium text-zinc-200">João</div>
             <div className="text-[11px] text-zinc-600">sessão local</div>
           </div>
         </div>

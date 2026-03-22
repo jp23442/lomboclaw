@@ -71,19 +71,21 @@ export function StreamingMessage() {
   const isThinkingOnly = !!allThinking && !visibleContent;
 
   return (
-    <div className="py-5 px-4 md:px-0">
-      <div className="max-w-3xl mx-auto flex gap-4">
+    <div className="py-6 px-4 md:px-0 fade-in">
+      <div className="max-w-3xl mx-auto flex gap-5">
         {/* Avatar */}
         <div className="shrink-0 pt-0.5">
-          <div className="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
+          <div className="relative">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 glow-ring">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+            </div>
           </div>
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-zinc-300 mb-1">LomboClaw</div>
+          <div className="text-[13px] font-semibold text-zinc-400 mb-2 tracking-wide">LomboClaw</div>
 
           {/* Thinking block (streaming) */}
           {allThinking && (
@@ -101,7 +103,7 @@ export function StreamingMessage() {
 
           {/* Streaming text (only non-thinking content) */}
           {visibleContent ? (
-            <div className="msg-content text-[0.9375rem] text-zinc-300 leading-relaxed">
+            <div className="msg-content text-[15px] text-zinc-300 leading-relaxed">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
@@ -110,13 +112,13 @@ export function StreamingMessage() {
               >
                 {visibleContent}
               </ReactMarkdown>
-              <span className="inline-block w-0.5 h-[1.1em] bg-emerald-500 animate-pulse ml-0.5 align-text-bottom" />
+              <span className="inline-block w-0.5 h-[1.1em] bg-gradient-to-t from-emerald-500 to-emerald-400 animate-pulse ml-1 align-text-bottom rounded-full shadow-lg shadow-emerald-500/50" />
             </div>
           ) : streaming.toolCalls.length === 0 && !allThinking ? (
-            <div className="flex items-center gap-1 py-1">
-              <span className="thinking-dot w-1.5 h-1.5 rounded-full bg-zinc-500" />
-              <span className="thinking-dot w-1.5 h-1.5 rounded-full bg-zinc-500" />
-              <span className="thinking-dot w-1.5 h-1.5 rounded-full bg-zinc-500" />
+            <div className="flex items-center gap-1.5 py-2">
+              <span className="thinking-dot w-2 h-2 rounded-full bg-emerald-500/80" />
+              <span className="thinking-dot w-2 h-2 rounded-full bg-emerald-500/80" />
+              <span className="thinking-dot w-2 h-2 rounded-full bg-emerald-500/80" />
             </div>
           ) : null}
         </div>

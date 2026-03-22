@@ -286,7 +286,7 @@ export function ToolCallRenderer({ tool, isStreaming = false }: ToolCallRenderer
     return (
       <button
         onClick={() => { setCollapsed(false); setExpanded(true); }}
-        className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors rounded-md hover:bg-zinc-800/50"
+        className="inline-flex items-center gap-2 px-3 py-1.5 text-[11px] text-zinc-500 hover:text-zinc-300 transition-all duration-200 rounded-lg hover:bg-white/[0.03] border border-transparent hover:border-white/[0.04]"
         title={`${summary} — click to expand`}
       >
         <StatusIcon state={tool.state} />
@@ -297,14 +297,14 @@ export function ToolCallRenderer({ tool, isStreaming = false }: ToolCallRenderer
   }
 
   return (
-    <div className={`border rounded-lg overflow-hidden transition-all duration-300 ${
-      isDone ? "border-zinc-800/50 bg-zinc-900/20" : "border-zinc-800/80 bg-zinc-900/30"
+    <div className={`border rounded-xl overflow-hidden transition-all duration-300 ${
+      isDone ? "border-white/[0.03] bg-white/[0.01]" : "border-white/[0.05] bg-white/[0.02]"
     }`}>
       {/* Header */}
       <button
         onClick={() => hasContent && setExpanded(!expanded)}
-        className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors ${
-          hasContent ? "hover:bg-zinc-800/50 cursor-pointer" : "cursor-default"
+        className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs transition-all duration-200 ${
+          hasContent ? "hover:bg-white/[0.02] cursor-pointer" : "cursor-default"
         }`}
       >
         <StatusIcon state={tool.state} />
@@ -312,7 +312,7 @@ export function ToolCallRenderer({ tool, isStreaming = false }: ToolCallRenderer
         <span className={`truncate flex-1 text-left ${isDone ? "text-zinc-500" : "text-zinc-300"}`}>{summary}</span>
 
         {fullPath && category !== "bash" && (
-          <span className="text-[10px] text-zinc-600 font-mono truncate max-w-[200px] hidden md:block">
+          <span className="text-[10px] text-zinc-600 font-mono truncate max-w-[200px] hidden md:block px-2 py-0.5 rounded-md bg-white/[0.02]">
             {fullPath}
           </span>
         )}
@@ -320,7 +320,7 @@ export function ToolCallRenderer({ tool, isStreaming = false }: ToolCallRenderer
         {hasContent && (
           <svg
             width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-            className={`text-zinc-600 transition-transform shrink-0 ${expanded ? "rotate-180" : ""}`}
+            className={`text-zinc-500 transition-transform duration-200 shrink-0 ${expanded ? "rotate-180" : ""}`}
           >
             <path d="M6 9l6 6 6-6" />
           </svg>
@@ -328,7 +328,7 @@ export function ToolCallRenderer({ tool, isStreaming = false }: ToolCallRenderer
       </button>
 
       {expanded && (
-        <div className="border-t border-zinc-800/80 px-3 py-2.5 bg-zinc-950/50 tool-expand">
+        <div className="border-t border-white/[0.04] px-4 py-3 bg-black/20 tool-expand">
           <ExpandedContent tool={tool} category={category} />
         </div>
       )}
