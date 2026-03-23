@@ -1,4 +1,4 @@
-<img width="1693" height="811" alt="image" src="https://github.com/user-attachments/assets/56331ade-2da9-4c0b-8c00-7b44839abf84" /># ⚡ LomboClaw
+# ⚡ LomboClaw
 
 <p align="center">
   <img src="public/lomboclaw-banner.svg" alt="LomboClaw" width="600">
