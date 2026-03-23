@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>WebUI para o OpenClaw Gateway</strong>
+  <strong>A custom web UI for the OpenClaw Gateway</strong>
 </p>
 
 <p align="center">
@@ -16,43 +16,43 @@
 
 ---
 
-**LomboClaw** é uma interface web custom para o [OpenClaw](https://github.com/openclaw/openclaw) — estilo OpenWebUI, com tema dark, streaming em tempo real e acesso via Tailscale no celular.
+**LomboClaw** is a custom web interface for [OpenClaw](https://github.com/openclaw/openclaw) — dark-themed, real-time streaming chat with multi-model support, remote access via VPN, and full gateway management from the browser.
 
-Inclui também patches no backend do OpenClaw para **memory recall automático via RAG** antes de cada resposta.
+Also ships with OpenClaw backend patches for **automatic memory recall via RAG** before each response.
 
 ## Features
 
 ### Frontend
-- Chat em tempo real via WebSocket (protocolo OpenClaw v3)
-- **Login Screen** — autenticação por senha + Ed25519 device pairing
-- **Model Selector** — troca de modelo on-the-fly com logos dos providers (OpenAI, Anthropic, Google, Meta, etc.)
-- **Settings Panel** — editor visual completo de todas as 37 seções de config do gateway (toggles, selects, arrays, nested objects)
-- **Thinking/Reasoning** — visualização do raciocínio do modelo em tempo real
-- **Tool Calls** — renderização estilo Claude Code (diffs, terminal, file read/write)
-- **Image attachments** — drag & drop, paste, upload com preview
-- **Gerenciamento completo** — Agentes, Skills, Cron jobs, TTS, Aprovações, Sessões, Dispositivos
-- Sidebar com busca, agrupamento temporal (Hoje/Ontem/Anteriores)
-- Persistência de sessões, modelo e auth em localStorage
-- PWA-ready (manifest + ícones para home screen)
-- Ed25519 device auth em JS puro (sem crypto.subtle, funciona em HTTP/mobile)
-- Reconnect automático ao voltar de background (Safari/iOS)
-- Acesso remoto via Tailscale (detecção dinâmica de host)
+- Real-time chat via WebSocket (OpenClaw protocol v3)
+- **Login Screen** — password auth + Ed25519 device pairing
+- **Model Selector** — switch models on-the-fly with provider logos (OpenAI, Anthropic, Google, Meta, etc.)
+- **Provider Management** — add any OpenAI-compatible API (OpenRouter, Groq, DeepSeek, xAI, Mistral, etc.) directly from the UI
+- **Settings Panel** — full visual editor for all gateway config sections (toggles, selects, arrays, nested objects)
+- **Thinking/Reasoning** — live visualization of model reasoning
+- **Tool Calls** — Claude Code-style rendering (diffs, terminal output, file read/write)
+- **File attachments** — drag & drop, paste, upload with preview (images, PDF, code, text)
+- **Debug Panel** — live logs, session export (JSON/Markdown), raw state inspection
+- Sidebar with search and temporal grouping (Today/Yesterday/Older)
+- Session, model and auth persistence in localStorage
+- PWA-ready (manifest + icons for home screen install)
+- Pure JS Ed25519 device auth (no crypto.subtle required — works over HTTP/mobile)
+- Auto-reconnect on tab background return (Safari/iOS)
+- Dynamic host detection for remote access (VPN, Tailscale, LAN)
 
-### Backend (patches)
-- **Memory Recall** — busca automática na memória do workspace antes de responder
-  - Detecta cues em pt-BR: "lembra", "hardware", "projeto", "config", etc.
-  - Usa memory search nativa do OpenClaw (Gemini embeddings)
-  - Critique por overlap de tokens + score, injeta max 3 snippets no prompt
-- **Live Memory Capture** — detecta fatos importantes e salva no `MEMORY.md`
-  - Classificação automática: HARDWARE, CONFIG, PROJECT, PREFERENCE, NOTE
-  - Deduplicação por similaridade de tokens
-  - Sync automático com o índice de memória
+### Backend patches
+- **Memory Recall** — automatically searches workspace memory before responding
+  - Uses OpenClaw's native memory search (Gemini embeddings)
+  - Token overlap + score critique, injects up to 3 snippets into the prompt
+- **Live Memory Capture** — detects important facts and saves to `MEMORY.md`
+  - Auto-classification: HARDWARE, CONFIG, PROJECT, PREFERENCE, NOTE
+  - Token similarity deduplication
+  - Auto-sync with memory index
 
 ## Stack
 
 | Layer | Tech |
 |-------|------|
-| Framework | Next.js 16 + React 19 |
+| Framework | Next.js 15 + React 19 |
 | Styling | Tailwind CSS 4 |
 | State | Zustand |
 | Crypto | @noble/curves (Ed25519), @noble/hashes (SHA-256) |
@@ -60,121 +60,121 @@ Inclui também patches no backend do OpenClaw para **memory recall automático v
 | Backend | OpenClaw Gateway (Node.js) |
 | Embeddings | Gemini Embedding 001 |
 
-## Estrutura
+## Structure
 
 ```
 lomboclaw/
 ├── src/
 │   ├── app/              # Next.js app router
 │   ├── components/       # React components
-│   │   ├── ChatArea.tsx       # Área principal de chat
-│   │   ├── ChatInput.tsx      # Input com attachments
-│   │   ├── Sidebar.tsx        # Sidebar com sessões
-│   │   ├── ModelSelector.tsx  # Dropdown de modelos
-│   │   ├── MessageBubble.tsx  # Bolha de mensagem
-│   │   ├── ThinkingBlock.tsx  # Bloco de reasoning
-│   │   ├── ToolCallRenderer.tsx # Renderização de tool calls
-│   │   ├── CodeBlock.tsx      # Code blocks com syntax
-│   │   └── StreamingMessage.tsx # Mensagem em streaming
+│   │   ├── ChatArea.tsx         # Main chat area
+│   │   ├── ChatInput.tsx        # Input with attachments
+│   │   ├── Sidebar.tsx          # Session sidebar
+│   │   ├── ModelSelector.tsx    # Model dropdown
+│   │   ├── MessageBubble.tsx    # Message bubble
+│   │   ├── ThinkingBlock.tsx    # Reasoning block
+│   │   ├── ToolCallRenderer.tsx # Tool call rendering
+│   │   ├── Settings.tsx         # Full settings panel
+│   │   └── ChatDebug.tsx        # Debug & export panel
 │   ├── hooks/
-│   │   ├── useOpenClaw.ts     # Hook principal do client
-│   │   └── useGatewayInfo.ts  # Models, devices, health
+│   │   ├── useOpenClaw.ts       # Main client hook
+│   │   └── useGatewayInfo.ts    # Models, devices, health
 │   └── lib/
-│       ├── openclaw-client.ts # WebSocket client
-│       ├── device-crypto.ts   # Ed25519 auth (pure JS)
-│       └── store.ts           # Zustand store + localStorage
+│       ├── openclaw-client.ts   # WebSocket client
+│       ├── device-crypto.ts     # Ed25519 auth (pure JS)
+│       └── store.ts             # Zustand store + localStorage
 ├── backend/
-│   └── gateway-patches/       # Patches pro OpenClaw source
-│       ├── chat-memory.ts     # Memory recall + capture
+│   └── gateway-patches/         # OpenClaw source patches
+│       ├── chat-memory.ts       # Memory recall + capture
 │       ├── chat-memory.test.ts
-│       └── chat.ts.patch      # Diff da integração
-├── public/                    # PWA assets
-└── .env.example               # Template de configuração
+│       └── chat.ts.patch        # Integration diff
+├── public/                      # PWA assets
+└── .env.example                 # Config template
 ```
 
 ## Quick Start
 
-### 1. Pré-requisitos
+### 1. Prerequisites
 - [Node.js 22+](https://nodejs.org/)
-- [OpenClaw](https://github.com/openclaw/openclaw) rodando (`openclaw gateway`)
+- [OpenClaw](https://github.com/openclaw/openclaw) running (`openclaw gateway`)
 
-### 2. Configurar
+### 2. Setup
 
 ```bash
 git clone https://github.com/jp23442/lomboclaw.git
 cd lomboclaw
 cp .env.example .env.local
-# Editar .env.local com sua senha do gateway e device keys
+# Edit .env.local with your gateway password and device keys
 npm install
 ```
 
-### 3. Rodar
+### 3. Run
 
 ```bash
 npm run dev
-# Acesse http://localhost:3003
+# Open http://localhost:3000
 ```
 
-### 4. Acesso remoto (Tailscale)
+### 4. Remote access (VPN / Tailscale / LAN)
 
-O LomboClaw detecta automaticamente o hostname e conecta no gateway pela porta 18789. Para acesso via Tailscale:
+LomboClaw auto-detects the hostname and connects to the gateway on port 18789. To enable remote access:
 
-1. Configure `gateway.bind: "custom"` e `gateway.customBindHost: "0.0.0.0"` no `openclaw.json`
-2. Adicione a origem do Tailscale em `gateway.controlUI.allowedOrigins`
-3. Acesse pelo IP do Tailscale: `http://<tailscale-ip>:3003`
+1. Set `gateway.bind: "custom"` and `gateway.customBindHost: "0.0.0.0"` in `openclaw.json`
+2. Add your remote origin to `gateway.controlUI.allowedOrigins`
+3. Access via your VPN/LAN IP: `http://<your-ip>:3000`
 
-### 5. Aplicar patches no backend (opcional)
+### 5. Apply backend patches (optional)
 
-Para ativar o memory recall no gateway:
+To enable memory recall in the gateway:
 
 ```bash
-# Copiar chat-memory.ts para o source do OpenClaw
+# Copy patch files into OpenClaw source
 cp backend/gateway-patches/chat-memory.ts <openclaw-source>/src/gateway/server-methods/
 cp backend/gateway-patches/chat-memory.test.ts <openclaw-source>/src/gateway/server-methods/
 
-# Aplicar o patch no chat.ts
+# Apply the patch
 cd <openclaw-source>
 git apply backend/gateway-patches/chat.ts.patch
 
-# Configurar no openclaw.json
+# Configure in openclaw.json
 # agents.defaults.memorySearch.enabled = true
 # agents.defaults.memorySearch.provider = "gemini"
 # agents.defaults.memorySearch.model = "gemini-embedding-001"
 
-# Rebuildar e reiniciar
+# Rebuild and restart
 pnpm build && openclaw gateway
 ```
 
-## Variáveis de Ambiente
+## Environment Variables
 
-| Variável | Descrição |
-|----------|-----------|
-| `NEXT_PUBLIC_OPENCLAW_PASSWORD` | Senha do gateway (definida no `openclaw.json`) |
-| `NEXT_PUBLIC_DEVICE_ID` | ID do device pareado (hex) |
-| `NEXT_PUBLIC_DEVICE_PUBLIC_KEY` | Chave pública Ed25519 (base64url) |
-| `NEXT_PUBLIC_DEVICE_PRIVATE_KEY` | Chave privada Ed25519 (base64url) |
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_OPENCLAW_PASSWORD` | Gateway password (set in `openclaw.json`) |
+| `NEXT_PUBLIC_DEVICE_ID` | Paired device ID (hex) |
+| `NEXT_PUBLIC_DEVICE_PUBLIC_KEY` | Ed25519 public key (base64url) |
+| `NEXT_PUBLIC_DEVICE_PRIVATE_KEY` | Ed25519 private key (base64url) |
 
-> Se as variáveis de device não forem definidas, o LomboClaw gera automaticamente um par de chaves e armazena no IndexedDB do browser.
+> If device variables are not set, LomboClaw automatically generates a key pair and stores it in the browser's IndexedDB.
 
 ## Screenshots
 
-> _Em breve_
+> _Coming soon_
 
 ## Roadmap
 
-- [ ] Painel de memória no frontend (visualizar/editar memories)
-- [ ] Endpoint de status de memory recall no backend
-- [ ] Fork completo do OpenClaw com todas as patches integradas
-- [ ] Temas customizáveis
-- [ ] Suporte a voice input/output
-- [ ] Export de conversas
+- [ ] Memory panel in the frontend (view/edit memories)
+- [ ] Memory recall status endpoint in the backend
+- [ ] Full OpenClaw fork with all patches integrated
+- [ ] Customizable themes
+- [ ] Voice input/output support
+- [ ] Conversation export
 
-## Licença
+## License
 
 [MIT](LICENSE)
 
 ---
 
 <p align="center">
-  <sub>Feito com 🦞 por <a href="https://github.com/jp23442">jp23442</a> — powered by <a href="https://openclaw.ai">OpenClaw</a></sub>
+  <sub>Built with ⚡ by <a href="https://github.com/jp23442">jp23442</a> — powered by <a href="https://openclaw.ai">OpenClaw</a></sub>
 </p>
