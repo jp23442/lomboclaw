@@ -1,7 +1,7 @@
 # 🦞 LomboClaw
 
 <p align="center">
-  <img src="public/favicon.svg" alt="LomboClaw" width="120">
+  <img src="public/logo.svg" alt="LomboClaw" width="160">
 </p>
 
 <p align="center">
@@ -24,13 +24,15 @@ Inclui também patches no backend do OpenClaw para **memory recall automático v
 
 ### Frontend
 - Chat em tempo real via WebSocket (protocolo OpenClaw v3)
-- **Model Selector** — troca de modelo on-the-fly com busca e badge de reasoning
+- **Login Screen** — autenticação por senha + Ed25519 device pairing
+- **Model Selector** — troca de modelo on-the-fly com logos dos providers (OpenAI, Anthropic, Google, Meta, etc.)
+- **Settings Panel** — editor visual completo de todas as 37 seções de config do gateway (toggles, selects, arrays, nested objects)
 - **Thinking/Reasoning** — visualização do raciocínio do modelo em tempo real
 - **Tool Calls** — renderização estilo Claude Code (diffs, terminal, file read/write)
 - **Image attachments** — drag & drop, paste, upload com preview
+- **Gerenciamento completo** — Agentes, Skills, Cron jobs, TTS, Aprovações, Sessões, Dispositivos
 - Sidebar com busca, agrupamento temporal (Hoje/Ontem/Anteriores)
-- Painel de devices conectados e info do gateway
-- Persistência de sessões e modelo selecionado em localStorage
+- Persistência de sessões, modelo e auth em localStorage
 - PWA-ready (manifest + ícones para home screen)
 - Ed25519 device auth em JS puro (sem crypto.subtle, funciona em HTTP/mobile)
 - Reconnect automático ao voltar de background (Safari/iOS)
@@ -50,7 +52,7 @@ Inclui também patches no backend do OpenClaw para **memory recall automático v
 
 | Layer | Tech |
 |-------|------|
-| Framework | Next.js 15 + React 19 |
+| Framework | Next.js 16 + React 19 |
 | Styling | Tailwind CSS 4 |
 | State | Zustand |
 | Crypto | @noble/curves (Ed25519), @noble/hashes (SHA-256) |
