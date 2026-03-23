@@ -45,6 +45,7 @@ const PROVIDER_IMAGES: Record<string, string> = {
   xai: "/providers/xai.svg",
   mistral: "/providers/mistral.svg",
   ollama: "/providers/ollama.svg",
+  meta: "/providers/ollama.svg",
 };
 
 export function ProviderIcon({ provider, modelId, size = 16 }: { provider: string; modelId: string; size?: number }) {

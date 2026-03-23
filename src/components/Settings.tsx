@@ -935,48 +935,457 @@ function ConfigSection({ clientRef }: { clientRef: React.RefObject<OpenClawClien
 
 // ============ Models Section ============
 
+// Provider presets for quick setup
+const PROVIDER_PRESETS: { key: string; label: string; baseUrl: string; placeholder: string }[] = [
+  { key: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", placeholder: "sk-..." },
+  { key: "anthropic", label: "Anthropic", baseUrl: "https://api.anthropic.com", placeholder: "sk-ant-..." },
+  { key: "google", label: "Google (Gemini)", baseUrl: "https://generativelanguage.googleapis.com/v1beta", placeholder: "AIza..." },
+  { key: "openrouter", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", placeholder: "sk-or-..." },
+  { key: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", placeholder: "sk-..." },
+  { key: "mistral", label: "Mistral", baseUrl: "https://api.mistral.ai/v1", placeholder: "..." },
+  { key: "xai", label: "xAI (Grok)", baseUrl: "https://api.x.ai/v1", placeholder: "xai-..." },
+  { key: "groq", label: "Groq", baseUrl: "https://api.groq.com/openai/v1", placeholder: "gsk_..." },
+  { key: "together", label: "Together AI", baseUrl: "https://api.together.xyz/v1", placeholder: "..." },
+  { key: "ollama", label: "Ollama (local)", baseUrl: "http://localhost:11434/v1", placeholder: "(não necessário)" },
+  { key: "custom", label: "API personalizada (OpenAI-compatível)", baseUrl: "", placeholder: "sua-api-key" },
+];
+
 function ModelsSection({ clientRef }: { clientRef: React.RefObject<OpenClawClient | null> }) {
-  const { data, loading, error, refresh } = useRpc<AnyData>(clientRef, "models.list");
+  const { data: modelsData, loading: modelsLoading, refresh: refreshModels } = useRpc<AnyData>(clientRef, "models.list");
+  const { data: configData, loading: configLoading, refresh: refreshConfig } = useRpc<AnyData>(clientRef, "config.get");
+  const [showAdd, setShowAdd] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [editingProvider, setEditingProvider] = useState<string | null>(null);
+  const [addModelId, setAddModelId] = useState("");
+  const [addModelName, setAddModelName] = useState("");
+
+  // New provider form
+  const [newPreset, setNewPreset] = useState("openai");
+  const [newKey, setNewKey] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newBaseUrl, setNewBaseUrl] = useState("");
+  const [newApiKey, setNewApiKey] = useState("");
+
+  const loading = modelsLoading || configLoading;
+  const config = configData?.config as AnyData | undefined;
+  const hash = configData?.hash as string;
+  const providers = (config?.models as AnyData)?.providers as AnyData | undefined;
+  const catalogModels = (modelsData?.models as AnyData[]) || [];
+
+  const refresh = () => { refreshModels(); refreshConfig(); };
+
+  // Patch config helper
+  const patchConfig = async (patch: AnyData) => {
+    const client = clientRef.current;
+    if (!client) return;
+    setSaving(true);
+    setSaveMsg(null);
+    try {
+      // Get fresh hash
+      const freshConfig = await client.rpc<AnyData>("config.get");
+      const freshHash = freshConfig?.hash as string;
+      await client.patchConfig(patch, freshHash);
+      setSaveMsg({ type: "ok", text: "Salvo!" });
+      setTimeout(() => setSaveMsg(null), 2000);
+      refresh();
+    } catch (e) {
+      setSaveMsg({ type: "err", text: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Add provider
+  const handleAddProvider = async () => {
+    const preset = PROVIDER_PRESETS.find((p) => p.key === newPreset);
+    const providerKey = newPreset === "custom" ? (newName.toLowerCase().replace(/\s+/g, "-") || "custom") : newPreset;
+    const baseUrl = newBaseUrl || preset?.baseUrl || "";
+
+    const providerConfig: AnyData = {
+      enabled: true,
+      models: [],
+    };
+    if (baseUrl) providerConfig.baseUrl = baseUrl;
+    if (newApiKey) providerConfig.apiKey = newApiKey;
+    if (newName && newPreset === "custom") providerConfig.name = newName;
+
+    await patchConfig({
+      models: {
+        providers: {
+          [providerKey]: providerConfig,
+        },
+      },
+    });
+
+    setShowAdd(false);
+    setNewPreset("openai");
+    setNewKey("");
+    setNewName("");
+    setNewBaseUrl("");
+    setNewApiKey("");
+  };
+
+  // Remove provider
+  const handleRemoveProvider = async (providerKey: string) => {
+    // Set enabled: false instead of removing (safer)
+    await patchConfig({
+      models: {
+        providers: {
+          [providerKey]: { enabled: false },
+        },
+      },
+    });
+  };
+
+  // Add model to provider
+  const handleAddModel = async (providerKey: string) => {
+    if (!addModelId.trim()) return;
+    const existing = (providers?.[providerKey] as AnyData)?.models as AnyData[] || [];
+    const updated = [...existing, { id: addModelId.trim(), name: addModelName.trim() || addModelId.trim() }];
+    await patchConfig({
+      models: {
+        providers: {
+          [providerKey]: { models: updated },
+        },
+      },
+    });
+    setAddModelId("");
+    setAddModelName("");
+  };
+
+  // Remove model from provider
+  const handleRemoveModel = async (providerKey: string, modelId: string) => {
+    const existing = (providers?.[providerKey] as AnyData)?.models as AnyData[] || [];
+    const updated = existing.filter((m: AnyData) => m.id !== modelId);
+    await patchConfig({
+      models: {
+        providers: {
+          [providerKey]: { models: updated },
+        },
+      },
+    });
+  };
+
+  // Update provider API key
+  const handleUpdateApiKey = async (providerKey: string, apiKey: string) => {
+    await patchConfig({
+      models: {
+        providers: {
+          [providerKey]: { apiKey },
+        },
+      },
+    });
+  };
+
+  // Update provider base URL
+  const handleUpdateBaseUrl = async (providerKey: string, baseUrl: string) => {
+    await patchConfig({
+      models: {
+        providers: {
+          [providerKey]: { baseUrl },
+        },
+      },
+    });
+  };
 
   if (loading) return <LoadingSpinner />;
-  if (error) return <ErrorBox message={error} onRetry={refresh} />;
 
-  const models = (data?.models as AnyData[]) || [];
+  const providerKeys = providers ? Object.keys(providers).filter((k) => {
+    const p = providers[k] as AnyData;
+    return p && typeof p === "object" && p.enabled !== false;
+  }) : [];
 
   return (
     <div>
-      <SectionHeader title="Modelos" subtitle={`${models.length} modelos disponíveis no gateway`} />
-      <div className="mb-4">
+      <SectionHeader title="Modelos & Provedores" subtitle="Gerencie APIs de IA — OpenAI, Anthropic, OpenRouter, ou qualquer API compatível" />
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <ActionButton onClick={refresh}>Atualizar</ActionButton>
+        <ActionButton onClick={() => setShowAdd(true)} variant="success">+ Adicionar provedor</ActionButton>
+        <Badge>{catalogModels.length} modelos no catálogo</Badge>
+        <Badge>{providerKeys.length} provedores</Badge>
+        {saveMsg && (
+          <span className={`text-[12px] ${saveMsg.type === "ok" ? "text-emerald-400" : "text-red-400"}`}>
+            {saveMsg.text}
+          </span>
+        )}
       </div>
 
-      {models.length === 0 ? (
-        <EmptyState text="Nenhum modelo encontrado" />
-      ) : (
-        <div className="space-y-3">
-          {models.map((model, i) => (
-            <DataCard key={model.id || i}>
+      {/* Add provider form */}
+      {showAdd && (
+        <DataCard className="mb-4">
+          <div className="mb-3 text-sm font-medium text-zinc-100">Novo provedor</div>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-[11px] text-zinc-500">Tipo</label>
+              <select
+                value={newPreset}
+                onChange={(e) => {
+                  setNewPreset(e.target.value);
+                  const preset = PROVIDER_PRESETS.find((p) => p.key === e.target.value);
+                  setNewBaseUrl(preset?.baseUrl || "");
+                }}
+                className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-[13px] text-zinc-200 outline-none focus:border-zinc-600"
+              >
+                {PROVIDER_PRESETS.map((p) => (
+                  <option key={p.key} value={p.key}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {newPreset === "custom" && (
+              <div>
+                <label className="mb-1 block text-[11px] text-zinc-500">Nome do provedor</label>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Minha API"
+                  className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-[13px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-zinc-600"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="mb-1 block text-[11px] text-zinc-500">Base URL</label>
+              <input
+                type="text"
+                value={newBaseUrl || PROVIDER_PRESETS.find((p) => p.key === newPreset)?.baseUrl || ""}
+                onChange={(e) => setNewBaseUrl(e.target.value)}
+                placeholder="https://api.exemplo.com/v1"
+                className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-[12px] text-zinc-300 outline-none placeholder:text-zinc-600 focus:border-zinc-600"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-[11px] text-zinc-500">API Key</label>
+              <input
+                type="password"
+                value={newApiKey}
+                onChange={(e) => setNewApiKey(e.target.value)}
+                placeholder={PROVIDER_PRESETS.find((p) => p.key === newPreset)?.placeholder || "sua-api-key"}
+                className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-[12px] text-zinc-300 outline-none placeholder:text-zinc-600 focus:border-zinc-600"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <ActionButton onClick={handleAddProvider} variant="success" disabled={saving}>
+                {saving ? "Salvando..." : "Adicionar"}
+              </ActionButton>
+              <ActionButton onClick={() => setShowAdd(false)}>Cancelar</ActionButton>
+            </div>
+          </div>
+        </DataCard>
+      )}
+
+      {/* Provider cards */}
+      {providerKeys.length === 0 && !showAdd && (
+        <EmptyState text="Nenhum provedor configurado — clique em '+ Adicionar provedor' para começar" />
+      )}
+
+      <div className="space-y-3">
+        {providerKeys.map((providerKey) => {
+          const prov = providers![providerKey] as AnyData;
+          const provModels = (prov?.models as AnyData[]) || [];
+          const isEditing = editingProvider === providerKey;
+          const preset = PROVIDER_PRESETS.find((p) => p.key === providerKey);
+          const provLabel = (prov?.name as string) || preset?.label || providerKey;
+          const provBaseUrl = (prov?.baseUrl as string) || preset?.baseUrl || "";
+          const hasApiKey = !!(prov?.apiKey);
+
+          // Models from catalog for this provider
+          const catModelsForProvider = catalogModels.filter((m: AnyData) =>
+            (m.provider as string)?.toLowerCase() === providerKey.toLowerCase()
+          );
+          const allModels = [...provModels];
+          // Add catalog models not in config
+          for (const cm of catModelsForProvider) {
+            if (!allModels.some((m: AnyData) => m.id === cm.id)) {
+              allModels.push(cm);
+            }
+          }
+
+          return (
+            <DataCard key={providerKey}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium text-zinc-100">{model.name || model.id}</div>
-                  <div className="mt-0.5 truncate font-mono text-[11px] text-zinc-500">{model.id}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-semibold text-zinc-100">{provLabel}</div>
+                    <span className="font-mono text-[10px] text-zinc-600">{providerKey}</span>
+                    {hasApiKey && <Badge color="emerald">key configurada</Badge>}
+                    {!hasApiKey && providerKey !== "ollama" && <Badge color="amber">sem key</Badge>}
+                  </div>
+                  {provBaseUrl && (
+                    <div className="mt-0.5 truncate font-mono text-[11px] text-zinc-500">{provBaseUrl}</div>
+                  )}
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {model.provider && <Badge>{model.provider}</Badge>}
-                  {model.reasoning && <Badge color="violet">reasoning</Badge>}
-                  {model.vision && <Badge color="blue">vision</Badge>}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setEditingProvider(isEditing ? null : providerKey)}
+                    className="rounded-lg p-1.5 text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-300"
+                    title="Editar"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                      <path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleRemoveProvider(providerKey)}
+                    className="rounded-lg p-1.5 text-zinc-500 transition hover:bg-red-500/10 hover:text-red-400"
+                    title="Desativar"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
               </div>
-              {(model.contextWindow || model.maxTokens) && (
-                <div className="mt-2 flex gap-4 text-[11px] text-zinc-500">
-                  {model.contextWindow && <span>Context: {model.contextWindow.toLocaleString()}</span>}
-                  {model.maxTokens && <span>Max tokens: {model.maxTokens.toLocaleString()}</span>}
+
+              {/* Edit provider settings */}
+              {isEditing && (
+                <div className="mt-3 space-y-3 border-t border-zinc-800 pt-3">
+                  <ProviderFieldEditor
+                    label="Base URL"
+                    value={provBaseUrl}
+                    placeholder="https://api.exemplo.com/v1"
+                    mono
+                    onSave={(v) => handleUpdateBaseUrl(providerKey, v)}
+                    saving={saving}
+                  />
+                  <ProviderFieldEditor
+                    label="API Key"
+                    value=""
+                    placeholder={hasApiKey ? "••••••••• (já configurada)" : "Cole sua API key aqui"}
+                    password
+                    mono
+                    onSave={(v) => handleUpdateApiKey(providerKey, v)}
+                    saving={saving}
+                  />
+                </div>
+              )}
+
+              {/* Models list */}
+              {allModels.length > 0 && (
+                <div className="mt-3 border-t border-zinc-800 pt-3">
+                  <div className="mb-2 text-[11px] font-medium text-zinc-500">{allModels.length} modelos</div>
+                  <div className="space-y-1">
+                    {allModels.map((model: AnyData, i: number) => (
+                      <div key={model.id || i} className="flex items-center justify-between rounded-lg bg-zinc-950/50 px-3 py-1.5">
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[12px] text-zinc-200">{model.name || model.id}</span>
+                          {model.name && model.name !== model.id && (
+                            <span className="ml-2 font-mono text-[10px] text-zinc-600">{model.id}</span>
+                          )}
+                          {model.reasoning && (
+                            <span className="ml-1.5 rounded bg-violet-500/15 px-1 py-0.5 text-[8px] font-medium text-violet-300">reasoning</span>
+                          )}
+                        </div>
+                        {isEditing && (
+                          <button
+                            onClick={() => handleRemoveModel(providerKey, model.id as string)}
+                            className="shrink-0 rounded p-1 text-zinc-600 transition hover:bg-red-500/10 hover:text-red-400"
+                            title="Remover modelo"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M18 6L6 18M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add model form (inline when editing) */}
+              {isEditing && (
+                <div className="mt-2 flex items-end gap-2">
+                  <div className="flex-1">
+                    <label className="mb-1 block text-[10px] text-zinc-600">Model ID</label>
+                    <input
+                      type="text"
+                      value={addModelId}
+                      onChange={(e) => setAddModelId(e.target.value)}
+                      placeholder="ex: gpt-4o, claude-sonnet-4-20250514..."
+                      className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 font-mono text-[11px] text-zinc-300 outline-none placeholder:text-zinc-600 focus:border-zinc-600"
+                    />
+                  </div>
+                  <div className="w-[140px]">
+                    <label className="mb-1 block text-[10px] text-zinc-600">Nome (opcional)</label>
+                    <input
+                      type="text"
+                      value={addModelName}
+                      onChange={(e) => setAddModelName(e.target.value)}
+                      placeholder="GPT-4o"
+                      className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-[11px] text-zinc-300 outline-none placeholder:text-zinc-600 focus:border-zinc-600"
+                    />
+                  </div>
+                  <ActionButton
+                    onClick={() => handleAddModel(providerKey)}
+                    variant="success"
+                    disabled={saving || !addModelId.trim()}
+                  >
+                    + Modelo
+                  </ActionButton>
                 </div>
               )}
             </DataCard>
-          ))}
+          );
+        })}
+      </div>
+
+      {/* All catalog models (read-only reference) */}
+      {catalogModels.length > 0 && (
+        <div className="mt-6">
+          <div className="mb-3 text-[13px] font-medium text-zinc-400">Catálogo completo do gateway</div>
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3">
+            <div className="flex flex-wrap gap-1.5">
+              {catalogModels.map((model: AnyData, i: number) => (
+                <span key={model.id || i} className="rounded-md bg-zinc-800/60 px-2 py-1 font-mono text-[10px] text-zinc-400">
+                  {model.id}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Inline editable field for provider settings
+function ProviderFieldEditor({
+  label, value, placeholder, mono, password, onSave, saving,
+}: {
+  label: string; value: string; placeholder?: string; mono?: boolean; password?: boolean;
+  onSave: (value: string) => Promise<void>; saving: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(value);
+
+  return (
+    <div>
+      <label className="mb-1 block text-[11px] text-zinc-500">{label}</label>
+      <div className="flex items-center gap-2">
+        <input
+          type={password ? "password" : "text"}
+          value={editing ? val : value}
+          onChange={(e) => { setVal(e.target.value); setEditing(true); }}
+          placeholder={placeholder}
+          className={`flex-1 rounded-lg border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-[12px] text-zinc-300 outline-none placeholder:text-zinc-600 focus:border-zinc-600 ${mono ? "font-mono" : ""}`}
+        />
+        {editing && (
+          <ActionButton
+            onClick={async () => { await onSave(val); setEditing(false); }}
+            variant="success"
+            disabled={saving}
+          >
+            Salvar
+          </ActionButton>
+        )}
+      </div>
     </div>
   );
 }
