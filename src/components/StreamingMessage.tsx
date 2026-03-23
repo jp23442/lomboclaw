@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { LogoIcon } from "./Logo";
 import { useAppStore } from "@/lib/store";
 import { CodeBlock } from "./CodeBlock";
 import { ThinkingBlock } from "./ThinkingBlock";
@@ -52,9 +53,7 @@ export function StreamingMessage() {
       <div className="flex gap-3">
         <div className="shrink-0 pt-0.5">
           <div className="w-6 h-6 rounded-md bg-emerald-600 flex items-center justify-center">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
+            <LogoIcon size={12} className="text-white" />
           </div>
         </div>
 

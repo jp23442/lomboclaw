@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { LogoIcon } from "./Logo";
 import { ChatMessage } from "@/lib/openclaw-client";
 import { CodeBlock } from "./CodeBlock";
 import { ThinkingBlock } from "./ThinkingBlock";
@@ -67,9 +68,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             <div className={`w-6 h-6 rounded-md flex items-center justify-center ${
               isError ? "bg-red-600" : "bg-emerald-600"
             }`}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
+              <LogoIcon size={12} className="text-white" />
             </div>
           )}
         </div>

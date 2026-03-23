@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { GatewayModel, GatewayDevice } from "@/hooks/useGatewayInfo";
+import { LogoBox } from "./Logo";
 
 interface SidebarProps {
   onNewChat: () => void;
@@ -111,11 +112,7 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
     <aside className="flex h-full w-[240px] flex-col border-r border-zinc-800/60 bg-[#0d0d0d] text-zinc-100">
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-600">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-          </div>
+          <LogoBox size={28} className="rounded-md" />
           <div className="text-[13px] font-semibold text-zinc-100">LomboClaw</div>
         </div>
         <button

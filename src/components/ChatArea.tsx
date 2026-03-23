@@ -9,6 +9,7 @@ import { ModelSelector } from "./ModelSelector";
 import { Settings } from "./Settings";
 import { GatewayModel } from "@/hooks/useGatewayInfo";
 import { OpenClawClient } from "@/lib/openclaw-client";
+import { LogoBox } from "./Logo";
 
 interface ChatAreaProps {
   onSend: (text: string, attachments?: Attachment[]) => void;
@@ -85,11 +86,7 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
         {messages.length === 0 && !streaming ? (
           <div className="flex h-full flex-col items-center justify-center px-4 text-center">
             <div className="mb-5 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 shadow-lg shadow-emerald-900/30">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-              </div>
+              <LogoBox size={40} className="rounded-xl shadow-lg shadow-emerald-900/30" />
               <h1 className="text-2xl font-semibold text-zinc-100">{currentModel}</h1>
             </div>
 
