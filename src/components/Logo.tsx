@@ -20,8 +20,8 @@ export function LogoIcon({ size = 18, className = "" }: { size?: number; classNa
       {/* Right pincer */}
       <path d="M21 4c0 3-2 5-4 6l-2 1" />
       <path d="M21 4c-2-1-4 0-5 2" />
-      {/* Lightning bolt through center */}
-      <path d="M13 7l-2 5h4l-2 5" strokeWidth="2.2" />
+      {/* Lightning bolt — filled, chunky */}
+      <polygon points="14,6 10.5,12 13.5,12 10,18 11,18 14.5,11.5 11.5,11.5 14.5,6" fill="currentColor" stroke="none" />
       {/* Base/body */}
       <path d="M8 18c1 2 3 3 4 3s3-1 4-3" />
     </svg>

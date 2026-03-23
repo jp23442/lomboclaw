@@ -17,8 +17,8 @@
   <!-- Right pincer -->
   <path d="M412 100 C412 170, 372 210, 322 240 L292 255" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
   <path d="M412 100 C382 85, 347 95, 327 130" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <!-- Lightning bolt -->
-  <path d="M280 140 L240 270 L295 270 L225 400" stroke="url(#bolt)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Lightning bolt — filled polygon -->
+  <polygon points="290,120 230,265 280,265 215,410 240,410 300,255 250,255 300,120" fill="url(#bolt)"/>
   <!-- Body/base -->
   <path d="M175 390 C200 430, 240 450, 256 450 C272 450, 312 430, 337 390" stroke="white" stroke-width="24" stroke-linecap="round" fill="none"/>
 </svg>
