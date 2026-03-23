@@ -12,18 +12,9 @@
   --color-border-hover: rgba(255, 255, 255, 0.1);
 }
 
-html, body, #__next {
+html, body {
   height: 100%;
   height: 100dvh;
-  overflow: hidden;
-}
-
-/* Allow scroll on mobile login and other full-page views */
-@media (max-width: 768px) {
-  html, body, #__next {
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-  }
 }
 
 html, body {
