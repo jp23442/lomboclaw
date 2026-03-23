@@ -9,7 +9,7 @@ import { ModelSelector } from "./ModelSelector";
 import { Settings } from "./Settings";
 import { GatewayModel } from "@/hooks/useGatewayInfo";
 import { OpenClawClient } from "@/lib/openclaw-client";
-import { LogoBox } from "./Logo";
+import { ProviderIcon } from "./ProviderIcon";
 
 interface ChatAreaProps {
   onSend: (text: string, attachments?: Attachment[]) => void;
@@ -26,13 +26,14 @@ const suggestions = [
 ];
 
 export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: ChatAreaProps) {
-  const { sessions, activeSessionId, streaming, sidebarOpen, toggleSidebar, connectionState } = useAppStore();
+  const { sessions, activeSessionId, streaming, sidebarOpen, toggleSidebar, connectionState, selectedModel } = useAppStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   const messages = activeSession?.messages ?? [];
-  const currentModel = models[0]?.name || "LomboClaw";
+  const currentModelObj = models.find((m) => m.id === selectedModel) || models[0];
+  const currentModel = currentModelObj?.name || "LomboClaw";
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -86,7 +87,9 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
         {messages.length === 0 && !streaming ? (
           <div className="flex h-full flex-col items-center justify-center px-4 text-center">
             <div className="mb-5 flex items-center gap-3">
-              <LogoBox size={40} className="rounded-xl shadow-lg shadow-emerald-900/30" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-800 shadow-lg">
+                <ProviderIcon provider={currentModelObj?.provider || ""} modelId={currentModelObj?.id || ""} size={24} />
+              </div>
               <h1 className="text-2xl font-semibold text-zinc-100">{currentModel}</h1>
             </div>
 
