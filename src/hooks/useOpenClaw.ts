@@ -102,7 +102,7 @@ export function useOpenClaw() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.isLoggedIn, auth.gatewayUrl, auth.password]);
 
-  const sendMessage = useCallback(async (text: string, attachments?: { type: string; mimeType: string; content: string }[]) => {
+  const sendMessage = useCallback(async (text: string, attachments?: { type: string; mimeType: string; content: string; name?: string; size?: number }[]) => {
     const client = clientRef.current;
     if (!client || !client.isConnected()) return;
 
@@ -159,6 +159,12 @@ export function useOpenClaw() {
       role: "user",
       content: text,
       timestamp: Date.now(),
+      attachments: attachments?.map((a) => ({
+        name: a.name || "arquivo",
+        mimeType: a.mimeType,
+        size: a.size || 0,
+        type: a.type,
+      })),
     };
     store.addMessage(activeId, userMsg);
     store.setInputValue("");

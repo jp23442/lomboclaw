@@ -89,6 +89,24 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             </div>
           )}
 
+          {message.attachments && message.attachments.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {message.attachments.map((att, i) => (
+                <div key={i} className="flex items-center gap-1.5 rounded-md bg-zinc-800/60 px-2 py-1">
+                  <span className="flex h-5 w-5 items-center justify-center rounded bg-zinc-700 font-mono text-[8px] font-bold text-zinc-400">
+                    {att.type === "image" ? "IMG" : att.type === "pdf" ? "PDF" : att.type === "code" ? "</>" : "TXT"}
+                  </span>
+                  <span className="text-[11px] text-zinc-400 max-w-[150px] truncate">{att.name}</span>
+                  {att.size > 0 && (
+                    <span className="text-[9px] text-zinc-600">
+                      {att.size < 1024 ? `${att.size}B` : att.size < 1048576 ? `${(att.size / 1024).toFixed(1)}KB` : `${(att.size / 1048576).toFixed(1)}MB`}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           {isUser ? (
             <p className="text-[13px] text-zinc-200 whitespace-pre-wrap leading-relaxed">
               {message.content}

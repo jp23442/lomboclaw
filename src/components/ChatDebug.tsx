@@ -543,6 +543,9 @@ function MessageDebugCard({ message, index }: { message: ChatMessage; index: num
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {message.thinking && <span className="rounded bg-violet-500/15 px-1.5 py-0.5 text-[9px] text-violet-300">thinking</span>}
+          {message.attachments && message.attachments.length > 0 && (
+            <span className="rounded bg-blue-500/15 px-1.5 py-0.5 text-[9px] text-blue-400">{message.attachments.length} anexos</span>
+          )}
           {message.toolCalls && message.toolCalls.length > 0 && (
             <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] text-amber-400">{message.toolCalls.length} tools</span>
           )}
@@ -576,6 +579,24 @@ function MessageDebugCard({ message, index }: { message: ChatMessage; index: num
               <div><span className="text-zinc-500">Tokens:</span> <span className="text-zinc-400">in={message.usage.inputTokens} out={message.usage.outputTokens}</span></div>
             )}
           </div>
+
+          {message.attachments && message.attachments.length > 0 && (
+            <div>
+              <div className="text-[10px] font-medium text-blue-400 mb-1">Attachments ({message.attachments.length})</div>
+              {message.attachments.map((att, i) => (
+                <div key={i} className="mb-1 flex items-center gap-2 rounded-lg bg-zinc-950 px-2 py-1.5 text-[11px]">
+                  <span className="font-medium text-zinc-300">{att.name}</span>
+                  <span className="text-zinc-500">{att.mimeType}</span>
+                  <span className="text-zinc-600">{att.size > 0 ? (att.size < 1024 ? `${att.size}B` : `${(att.size / 1024).toFixed(1)}KB`) : ""}</span>
+                  <span className={`rounded px-1 py-0.5 text-[9px] ${
+                    att.type === "image" ? "bg-emerald-500/15 text-emerald-400" :
+                    att.type === "code" ? "bg-violet-500/15 text-violet-400" :
+                    "bg-zinc-800 text-zinc-500"
+                  }`}>{att.type}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {message.thinking && (
             <div>

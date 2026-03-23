@@ -6,6 +6,14 @@ export interface OpenClawConfig {
   password: string;
 }
 
+export interface AttachmentMeta {
+  name: string;
+  mimeType: string;
+  size: number;
+  type: string; // "image" | "text" | "pdf" | "code" | "file"
+  preview?: string; // object URL for images, first lines for text
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant" | "system";
@@ -15,6 +23,7 @@ export interface ChatMessage {
   state?: "delta" | "final" | "error" | "aborted";
   toolCalls?: ToolCall[];
   usage?: { inputTokens: number; outputTokens: number };
+  attachments?: AttachmentMeta[];
 }
 
 export interface ToolCall {
