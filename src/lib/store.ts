@@ -43,12 +43,14 @@ interface AppState {
 
   // Messages
   addMessage: (sessionId: string, msg: ChatMessage) => void;
+  upsertMessage: (sessionId: string, msg: ChatMessage) => void;
   updateSessionTitle: (sessionId: string, title: string) => void;
 
   // Streaming
   streaming: StreamingState | null;
   setStreaming: (s: StreamingState | null) => void;
   appendDelta: (runId: string, content: string) => void;
+  setContentFull: (runId: string, fullText: string) => void;
   appendThinking: (runId: string, thinking: string) => void;
   setThinkingFull: (runId: string, fullText: string) => void;
   addToolCall: (runId: string, tool: ToolCall) => void;
@@ -211,6 +213,30 @@ export const useAppStore = create<AppState>((set, get) => ({
     persistAfterSet(get);
   },
 
+  upsertMessage: (sessionId, msg) => {
+    set((s) => ({
+      sessions: s.sessions.map((ss) => {
+        if (ss.id !== sessionId) return ss;
+        const existingIdx = ss.messages.findIndex((m) => m.id === msg.id);
+        if (existingIdx >= 0) {
+          // Update existing message
+          const updated = [...ss.messages];
+          updated[existingIdx] = msg;
+          return { ...ss, messages: updated, updatedAt: Date.now() };
+        }
+        // Add new
+        return { ...ss, messages: [...ss.messages, msg], updatedAt: Date.now() };
+      }),
+    }));
+    // Auto-title from first user message
+    const session = get().sessions.find((ss) => ss.id === sessionId);
+    if (session && session.messages.length === 1 && msg.role === "user") {
+      const title = msg.content.slice(0, 50) + (msg.content.length > 50 ? "..." : "");
+      get().renameSession(sessionId, title);
+    }
+    persistAfterSet(get);
+  },
+
   updateSessionTitle: (sessionId, title) => {
     set((s) => ({
       sessions: s.sessions.map((ss) => (ss.id === sessionId ? { ...ss, title } : ss)),
@@ -228,6 +254,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       return {
         streaming: { ...s.streaming, content: s.streaming.content + content },
+      };
+    });
+  },
+  setContentFull: (runId, fullText) => {
+    set((s) => {
+      if (!s.streaming || s.streaming.runId !== runId) {
+        return { streaming: { runId, content: fullText, thinking: "", toolCalls: [] } };
+      }
+      return {
+        streaming: { ...s.streaming, content: fullText },
       };
     });
   },

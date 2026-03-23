@@ -47,12 +47,15 @@ export class OpenClawClient {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
   private identity: DeviceIdentity | null = null;
+  // Track accumulated text length per runId to compute deltas from full-text events
+  private lastContentLength = new Map<string, number>();
 
   public onEvent: EventCallback = () => {};
   public onMessage: MessageCallback = () => {};
   public onDelta: DeltaCallback = () => {};
   public onThinking: ThinkingCallback = () => {};
   public onThinkingFull: ((runId: string, fullText: string) => void) | null = null;
+  public onContentFull: ((runId: string, fullText: string) => void) | null = null;
   public onStateChange: StateCallback = () => {};
   public onToolCall: (runId: string, tool: ToolCall) => void = () => {};
   public onToolResult: (runId: string, toolId: string, output: string) => void = () => {};
@@ -345,12 +348,23 @@ export class OpenClawClient {
       }
     } else if (stream === "assistant") {
       // Assistant text stream — each event has FULL accumulated text.
-      // Only route to thinking if isReasoning flag is set.
       const text = (payload.text as string) || (data?.text as string) || "";
       const isReasoning = !!(payload.isReasoning || (data && data.isReasoning));
 
       if (isReasoning && text) {
         this.onThinkingFull?.(runId, text);
+      } else if (text) {
+        // Non-reasoning text: compute delta from accumulated full text
+        const prevLen = this.lastContentLength.get(runId) || 0;
+        if (text.length > prevLen) {
+          const delta = text.slice(prevLen);
+          this.lastContentLength.set(runId, text.length);
+          this.onDelta(runId, delta);
+        } else if (text.length < prevLen) {
+          // Full replacement (rare) — reset
+          this.lastContentLength.set(runId, text.length);
+          this.onContentFull?.(runId, text);
+        }
       }
     } else if (stream === "lifecycle" && data) {
       console.log("[OpenClaw] lifecycle:", JSON.stringify(data).slice(0, 300));
@@ -366,43 +380,62 @@ export class OpenClawClient {
     if (!message) return;
     const content = message.content;
 
-    // Debug: log raw chat events to understand gateway format
-    if (state === "delta") {
-      console.debug("[OpenClaw] chat delta:", JSON.stringify({ state, content: Array.isArray(content) ? content.map((b: Record<string, unknown>) => ({ type: b.type, hasText: !!b.text, hasThinking: !!b.thinking, hasReasoning: !!b.reasoning })) : typeof content }).slice(0, 300));
-    } else {
-      console.debug("[OpenClaw] chat event:", JSON.stringify({ state, messageKeys: Object.keys(message), contentType: Array.isArray(content) ? "array" : typeof content }).slice(0, 300));
-    }
+    console.debug("[OpenClaw] chat event:", JSON.stringify({ state, contentType: Array.isArray(content) ? "array" : typeof content }).slice(0, 300));
 
-    // Check for thinking/reasoning at message level (some providers put it here)
+    // Check for thinking/reasoning at message level
     const msgThinking = (message.thinking as string) || (message.reasoning as string) || "";
-    if (msgThinking && state === "delta") {
-      this.onThinking(runId, msgThinking);
-    }
 
-    if (Array.isArray(content)) {
-      for (const block of content) {
-        const b = block as Record<string, unknown>;
-        if (b.type === "tool_use") {
-          this.onToolCall(runId, {
-            id: b.id as string,
-            name: b.name as string,
-            input: b.input as Record<string, unknown>,
-            state: "pending",
-          });
-        } else if (b.type === "tool_result") {
-          this.onToolResult(runId, b.tool_use_id as string, b.content as string);
-        } else if (b.type === "thinking" || b.type === "reasoning") {
-          const thinkText = (b.thinking as string) || (b.reasoning as string) || (b.text as string) || "";
-          if (state === "delta" && thinkText) this.onThinking(runId, thinkText);
-        } else if (b.type === "text") {
-          if (state === "delta") this.onDelta(runId, b.text as string);
+    // Treat anything that's not explicitly "final"/"error"/"aborted" as a streaming delta
+    const isFinal = state === "final" || state === "error" || state === "aborted";
+    const isDelta = !isFinal; // "delta", "update", undefined, etc.
+
+    if (isDelta) {
+      if (msgThinking) this.onThinking(runId, msgThinking);
+
+      // Extract text content — may be incremental OR accumulated depending on provider
+      let fullText = "";
+      if (Array.isArray(content)) {
+        for (const block of content) {
+          const b = block as Record<string, unknown>;
+          if (b.type === "tool_use") {
+            this.onToolCall(runId, { id: b.id as string, name: b.name as string, input: b.input as Record<string, unknown>, state: "pending" });
+          } else if (b.type === "tool_result") {
+            this.onToolResult(runId, b.tool_use_id as string, b.content as string);
+          } else if (b.type === "thinking" || b.type === "reasoning") {
+            const t = (b.thinking as string) || (b.reasoning as string) || (b.text as string) || "";
+            if (t) this.onThinking(runId, t);
+          } else if (b.type === "text") {
+            fullText += (b.text as string) || "";
+          }
+        }
+      } else if (typeof content === "string") {
+        fullText = content;
+      }
+
+      if (fullText) {
+        // Use diff-tracking: if the text looks accumulated (longer than what we've seen),
+        // only emit the new part. Otherwise emit as-is (true delta).
+        const prevLen = this.lastContentLength.get(runId) || 0;
+        if (fullText.length > prevLen && prevLen > 0) {
+          // Accumulated text — only emit the new part
+          const delta = fullText.slice(prevLen);
+          this.lastContentLength.set(runId, fullText.length);
+          this.onDelta(runId, delta);
+        } else if (fullText.length <= prevLen && prevLen > 0) {
+          // Shorter or same — could be a true small delta, emit as-is
+          this.onDelta(runId, fullText);
+        } else {
+          // First chunk — emit and start tracking
+          this.lastContentLength.set(runId, fullText.length);
+          this.onDelta(runId, fullText);
         }
       }
-    } else if (typeof content === "string") {
-      if (state === "delta") this.onDelta(runId, content);
     }
 
-    if (state === "final" || state === "error" || state === "aborted") {
+    if (isFinal) {
+      // Clean up content length tracking
+      this.lastContentLength.delete(runId);
+
       const isThinkingBlock = (b: Record<string, unknown>) => b.type === "thinking" || b.type === "reasoning";
 
       const textContent = Array.isArray(content)

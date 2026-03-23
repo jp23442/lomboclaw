@@ -44,16 +44,21 @@ export function useOpenClaw() {
     };
 
     client.onDelta = (runId, content) => {
-      store.appendDelta(runId, content);
+      useAppStore.getState().appendDelta(runId, content);
     };
 
     client.onThinking = (runId, thinking) => {
-      store.appendThinking(runId, thinking);
+      useAppStore.getState().appendThinking(runId, thinking);
     };
 
     // Full thinking replacement (from agent events where each event has accumulated text)
     client.onThinkingFull = (runId, fullText) => {
-      store.setThinkingFull(runId, fullText);
+      useAppStore.getState().setThinkingFull(runId, fullText);
+    };
+
+    // Full content replacement (rare — when agent sends shorter text than previous)
+    client.onContentFull = (runId, fullText) => {
+      useAppStore.getState().setContentFull(runId, fullText);
     };
 
     client.onMessage = (msg: ChatMessage) => {
@@ -74,16 +79,17 @@ export function useOpenClaw() {
         }
       }
 
-      store.setStreaming(null);
-      store.addMessage(activeId, msg);
+      useAppStore.getState().setStreaming(null);
+      // Use upsert to handle duplicate finals (same runId)
+      useAppStore.getState().upsertMessage(activeId, msg);
     };
 
     client.onToolCall = (runId, tool) => {
-      store.addToolCall(runId, tool);
+      useAppStore.getState().addToolCall(runId, tool);
     };
 
     client.onToolResult = (runId, toolId, output) => {
-      store.updateToolCall(runId, toolId, { output, state: "done" });
+      useAppStore.getState().updateToolCall(runId, toolId, { output, state: "done" });
     };
 
     client.connect();
