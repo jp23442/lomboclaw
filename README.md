@@ -1,4 +1,4 @@
-# ⚡ LomboClaw
+<img width="1693" height="811" alt="image" src="https://github.com/user-attachments/assets/56331ade-2da9-4c0b-8c00-7b44839abf84" /># ⚡ LomboClaw
 
 <p align="center">
   <img src="public/lomboclaw-banner.svg" alt="LomboClaw" width="600">
@@ -17,6 +17,8 @@
 ---
 
 **LomboClaw** is a custom web interface for [OpenClaw](https://github.com/openclaw/openclaw) — dark-themed, real-time streaming chat with multi-model support, remote access via VPN, and full gateway management from the browser.
+
+<img width="1693" height="811" alt="image" src="https://github.com/user-attachments/assets/e1b58322-055a-481e-8582-af4da521884c" />
 
 Also ships with OpenClaw backend patches for **automatic memory recall via RAG** before each response.
 
