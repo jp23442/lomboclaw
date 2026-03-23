@@ -38,9 +38,11 @@ function getProviderKey(provider: string, modelId: string): string {
 
 // Real logo images in /public/providers/
 const PROVIDER_IMAGES: Record<string, string> = {
-  openai: "/providers/openai.png",
-  anthropic: "/providers/anthropic.png",
-  google: "/providers/google.png",
+  openai: "/providers/openai.svg",
+  anthropic: "/providers/anthropic.svg",
+  google: "/providers/google.svg",
+  deepseek: "/providers/deepseek.svg",
+  xai: "/providers/xai.svg",
   ollama: "/providers/ollama.webp",
 };
 
