@@ -10,6 +10,7 @@ import { Settings } from "./Settings";
 import { GatewayModel } from "@/hooks/useGatewayInfo";
 import { OpenClawClient } from "@/lib/openclaw-client";
 import { ProviderIcon } from "./ProviderIcon";
+import { ChatDebug } from "./ChatDebug";
 
 interface ChatAreaProps {
   onSend: (text: string, attachments?: Attachment[]) => void;
@@ -29,6 +30,7 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
   const { sessions, activeSessionId, streaming, sidebarOpen, toggleSidebar, connectionState, selectedModel } = useAppStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   const messages = activeSession?.messages ?? [];
@@ -69,6 +71,15 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
         <div className="flex items-center gap-0.5">
           <button className="rounded-md p-1.5 text-zinc-500 transition hover:bg-zinc-800" title="Status">
             <span className={`block h-2 w-2 rounded-full ${statusDot}`} />
+          </button>
+          <button
+            onClick={() => setDebugOpen(true)}
+            className="rounded-md p-1.5 text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-300"
+            title="Debug & Logs"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
           </button>
           <button
             onClick={() => setSettingsOpen(true)}
@@ -137,6 +148,7 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
       {(messages.length > 0 || streaming) && <ChatInput onSend={onSend} onAbort={onAbort} />}
 
       {settingsOpen && <Settings clientRef={clientRef} onClose={() => setSettingsOpen(false)} />}
+      {debugOpen && <ChatDebug onClose={() => setDebugOpen(false)} />}
     </div>
   );
 }
