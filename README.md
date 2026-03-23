@@ -1,7 +1,7 @@
 # 🦞 LomboClaw
 
 <p align="center">
-  <img src="public/logo.svg" alt="LomboClaw" width="160">
+  <img src="logo.svg" alt="LomboClaw" width="160">
 </p>
 
 <p align="center">
