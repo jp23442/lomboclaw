@@ -36,10 +36,35 @@ function getProviderKey(provider: string, modelId: string): string {
   return "";
 }
 
+// Real logo images in /public/providers/
+const PROVIDER_IMAGES: Record<string, string> = {
+  openai: "/providers/openai.png",
+  anthropic: "/providers/anthropic.png",
+  google: "/providers/google.png",
+  ollama: "/providers/ollama.webp",
+};
+
 export function ProviderIcon({ provider, modelId, size = 16 }: { provider: string; modelId: string; size?: number }) {
   const key = getProviderKey(provider, modelId);
   const color = PROVIDER_COLORS[key] || "#71717a";
 
+  // Use real image if available
+  const imageSrc = PROVIDER_IMAGES[key];
+  if (imageSrc) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={imageSrc}
+        alt={key}
+        width={size}
+        height={size}
+        className="shrink-0 rounded-sm object-contain"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
+  // Fallback to SVG icons
   switch (key) {
     case "openai":
       return (
