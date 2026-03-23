@@ -1,7 +1,7 @@
-# 🦞 LomboClaw
+# ⚡ LomboClaw
 
 <p align="center">
-  <img src="logo.svg" alt="LomboClaw" width="160">
+  <img src="public/lomboclaw-banner.png" alt="LomboClaw" width="480">
 </p>
 
 <p align="center">

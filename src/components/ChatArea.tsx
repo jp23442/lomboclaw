@@ -41,12 +41,22 @@ export function ChatArea({ onSend, onAbort, onNewChat, models, clientRef }: Chat
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streaming]);
 
+  // Debounce "connecting" state to avoid flickering on unstable connections (VPN, etc.)
+  const [stableState, setStableState] = useState(connectionState);
+  useEffect(() => {
+    if (connectionState === "connecting") {
+      const t = setTimeout(() => setStableState("connecting"), 1500);
+      return () => clearTimeout(t);
+    }
+    setStableState(connectionState);
+  }, [connectionState]);
+
   const statusDot = {
     connected: "bg-emerald-500",
     connecting: "bg-amber-500 animate-pulse",
     disconnected: "bg-zinc-600",
     error: "bg-red-500",
-  }[connectionState];
+  }[stableState];
 
   return (
     <div className="flex h-full flex-1 flex-col bg-[#111111] text-zinc-100 relative">

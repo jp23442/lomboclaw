@@ -7,16 +7,20 @@ import { LogoBox } from "./Logo";
 export function LoginScreen() {
   const login = useAppStore((s) => s.login);
   const connectionState = useAppStore((s) => s.connectionState);
-  const [url, setUrl] = useState(() => {
-    if (typeof window === "undefined") return "ws://localhost:18789";
-    const host = window.location.hostname;
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return `${proto}//${host}:18789`;
-  });
+  const [url, setUrl] = useState("ws://localhost:18789");
   const [password, setPassword] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [detectedHost, setDetectedHost] = useState("localhost");
+
+  // Set correct URL and host after hydration (avoids SSR mismatch)
+  useEffect(() => {
+    const host = window.location.hostname;
+    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+    setUrl(`${proto}//${host}:18789`);
+    setDetectedHost(host);
+  }, []);
 
   // If we just got kicked back from an auth error, show it
   useEffect(() => {
@@ -36,8 +40,6 @@ export function LoginScreen() {
     login(url.trim(), password);
   };
 
-  // Detect if URL looks like it might not work
-  const detectedHost = typeof window !== "undefined" ? window.location.hostname : "localhost";
   const isLocalhost = detectedHost === "localhost" || detectedHost === "127.0.0.1";
   const isRemote = !isLocalhost && detectedHost !== "";
 

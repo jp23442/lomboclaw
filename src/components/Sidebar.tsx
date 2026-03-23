@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { GatewayModel, GatewayDevice } from "@/hooks/useGatewayInfo";
 import { LogoBox } from "./Logo";
@@ -40,12 +40,22 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
   const [search, setBuscar] = useState("");
   const [mode, setMode] = useState<SidebarMode>("main");
 
+  // Debounce "connecting" to avoid flickering on unstable connections (VPN)
+  const [stableConn, setStableConn] = useState(connectionState);
+  useEffect(() => {
+    if (connectionState === "connecting") {
+      const t = setTimeout(() => setStableConn("connecting"), 1500);
+      return () => clearTimeout(t);
+    }
+    setStableConn(connectionState);
+  }, [connectionState]);
+
   const statusColor = {
     connected: "bg-emerald-500",
     connecting: "bg-amber-500 animate-pulse",
     disconnected: "bg-zinc-600",
     error: "bg-red-500",
-  }[connectionState];
+  }[stableConn];
 
   const filtered = useMemo(
     () => (search ? sessions.filter((s) => s.title.toLowerCase().includes(search.toLowerCase())) : sessions),
@@ -113,7 +123,7 @@ export function Sidebar({ onNewChat, models, devices, health, onRefresh }: Sideb
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-2">
           <LogoBox size={28} className="rounded-md" />
-          <div className="text-[13px] font-semibold text-zinc-100">LomboClaw</div>
+          <div className="text-[13px] font-semibold text-zinc-100">⚡ LomboClaw</div>
         </div>
         <button
           onClick={toggleSidebar}
